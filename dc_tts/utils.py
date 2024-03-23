@@ -14,7 +14,6 @@ from scipy import signal
 from hyperparams import Hyperparams as hp
 import tensorflow as tf
 
-
 def get_spectrograms(fpath):
     '''Parse the wave file in `fpath` and
     Returns normalized melspectrogram and linear spectrogram.
@@ -62,7 +61,6 @@ def get_spectrograms(fpath):
 
     return mel, mag
 
-
 def spectrogram2wav(mag):
     '''# Generate wave file from linear magnitude spectrogram
 
@@ -88,10 +86,9 @@ def spectrogram2wav(mag):
     wav = signal.lfilter([1], [1, -hp.preemphasis], wav)
 
     # trim
-    wav, _ = librosa.effects.trim(wav)
+    wav = trim(wav)
 
     return wav.astype(np.float32)
-
 
 def griffin_lim(spectrogram):
     '''Applies Griffin-Lim's raw.'''
@@ -106,14 +103,12 @@ def griffin_lim(spectrogram):
 
     return y
 
-
 def invert_spectrogram(spectrogram):
     '''Applies inverse fft.
     Args:
       spectrogram: [1+n_fft//2, t]
     '''
     return librosa.istft(spectrogram, hp.hop_length, win_length=hp.win_length, window="hann")
-
 
 def plot_alignment(alignment, gs, dir=hp.logdir):
     """Plots the alignment.
@@ -131,8 +126,6 @@ def plot_alignment(alignment, gs, dir=hp.logdir):
     fig.colorbar(im)
     plt.title('{} Steps'.format(gs))
     plt.savefig('{}/alignment_{}.png'.format(dir, gs), format='png')
-    plt.close(fig)
-
 
 def guided_attention(g=0.2):
     '''Guided attention. Refer to page 3 on the paper.'''
@@ -142,12 +135,10 @@ def guided_attention(g=0.2):
             W[n_pos, t_pos] = 1 - np.exp(-(t_pos / float(hp.max_T) - n_pos / float(hp.max_N)) ** 2 / (2 * g * g))
     return W
 
-
 def learning_rate_decay(init_lr, global_step, warmup_steps = 4000.0):
     '''Noam scheme from tensor2tensor'''
     step = tf.to_float(global_step + 1)
     return init_lr * warmup_steps**0.5 * tf.minimum(step * warmup_steps**-1.5, step**-0.5)
-
 
 def load_spectrograms(fpath):
     '''Read the wave file in `fpath`
@@ -165,3 +156,12 @@ def load_spectrograms(fpath):
     # Reduction
     mel = mel[::hp.r, :]
     return fname, mel, mag
+
+
+def trim(wav, top_db=40, min_silence_sec=0.8):
+    frame_length = int(hp.sr * min_silence_sec)
+    hop_length = int(frame_length / 4)
+    endpoint = librosa.effects.split(wav, frame_length=frame_length,
+                               hop_length=hop_length,
+                               top_db=top_db)[0, 1]
+    return wav[:endpoint]
