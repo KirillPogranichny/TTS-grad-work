@@ -26,9 +26,9 @@ class Hyperparams:
     attention_win_size = 3
 
     # data
-    data = "../data/speech_dataset/early_short_stories"
+    data = "C:/Study/TTS-grad-work/data/speech_dataset/ru/early_short_stories/"
     test_data = "../data/speech_dataset/sents.txt"
-    vocab = "E абвгдеёжзийклмнопрстуфхцчшщъыьэюя-"
+    vocab = u'''␀␃ !',-.:;?êАБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЭЮЯабвгдежзийклмнопрстуфхцчшщъыьэюяё—'''
     max_N, max_T = 569, 988
 
     # max_N = 180 # Maximum number of characters.
