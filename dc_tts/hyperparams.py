@@ -1,7 +1,7 @@
 class Hyperparams:
     '''Hyper parameters'''
     # pipeline
-    prepro = True  # if True, run `python prepro.py` first before running `python train.py`.
+    prepro = False  # if True, run `python prepro.py` first before running `python train.py`.
 
     # signal processing
     sr = 22050  # Sampling rate.
@@ -26,7 +26,8 @@ class Hyperparams:
     attention_win_size = 3
 
     # data
-    data = "C:/Study/TTS-grad-work/data/speech_dataset/ru/early_short_stories/"
+    data = "C:/Study/TTS-grad-work/data/speech_dataset/ru/"
+    transcript = "C:/Study/TTS-grad-work/data/speech_dataset/ru/transcript.txt"
     test_data = "../data/speech_dataset/sents.txt"
     vocab = u'''␀␃ !',-.:;?êАБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЭЮЯабвгдежзийклмнопрстуфхцчшщъыьэюяё—'''
     max_N, max_T = 569, 988

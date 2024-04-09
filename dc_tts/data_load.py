@@ -27,8 +27,8 @@ def load_data(mode="train"):
     if mode == "train":
         # Parse
         fpaths, text_lengths, texts = [], [], []
-        transcript = os.path.join(hp.data, 'transcript.txt')
-        lines = codecs.open(transcript, 'r', 'utf-8').readlines()
+        # transcript = os.path.join(hp.trainscript)
+        lines = codecs.open(hp.transcript, 'r', 'utf-8').readlines()
         for line in lines:
             fname, _, text, _ = line.strip().split("|")
 
