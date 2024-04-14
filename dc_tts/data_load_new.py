@@ -64,7 +64,8 @@ def process_data(fpath, text_length, text):
 
 
 def put_texts(dataset):
-    return dataset.map(lambda fpath, text_length, decoded_text: decoded_text.set_shape((None,)))
+    text = dataset.map(lambda fpath, text_length, decoded_text: decoded_text)
+    return text
 
 
 def get_batch():
@@ -77,10 +78,24 @@ def get_batch():
         dataset = tf.data.Dataset.from_tensor_slices((fpaths, text_lengths, texts))
         dataset = dataset.shuffle(buffer_size=len(texts))
         print(f'dataset:\n{dataset}\n')
+        ctr = 0
+        for fpaths, text_lengths, texts in dataset:
+            if ctr == 1:
+                break
+            ctr += 1
+            print(fpaths, text_lengths, texts)
+
+
 
         dataset = dataset.map(
             lambda f, t_len, t: tuple(tf.py_function(process_data, [f, t_len, t], [tf.string, tf.int32, tf.string])))
         print(f'dataset after processing:\n{dataset}')
+        ctr = 0
+        for fpaths, text_lengths, texts in dataset:
+            if ctr == 1:
+                break
+            ctr += 1
+            print(fpaths, text_lengths, texts)
 
         if hp.prepro:
 
@@ -93,17 +108,18 @@ def get_batch():
                                           fname.replace("wav", "npy"))
                 return fname, mel, mag
 
-            fname, mel, mag = dataset.map(lambda f, _, __: _load_spectrograms(f)).unbatch()
+            results = list(dataset.map(lambda f, _, __: _load_spectrograms(f)).as_numpy_iterator())
         else:
-            fname, mel, mag = tf.py_function(load_spectrograms,
-                                             [dataset.map(lambda f, _, __: f)],
-                                             [tf.string, tf.float32, tf.float32])
+            results = list(dataset.map(lambda f, _, __: load_spectrograms(f)).as_numpy_iterator())
 
+        fname, mel, mag = zip(*results)
+
+    text = put_texts(dataset)
+
+    text.set_shape((None,))
     fname.set_shape(())
     mel.set_shape((None, hp.n_mels))
     mag.set_shape((None, hp.n_fft // 2 + 1))
-
-    text = put_texts(dataset)
 
     # Batching
     dataset = tf.data.Dataset.from_tensor_slices((text, fname, mel, mag))
@@ -113,4 +129,11 @@ def get_batch():
             bucket_batch_sizes=[hp.B] * (num_batch // hp.B)
         ))
 
-    return dataset, num_batch
+    iterator = dataset.make_one_shot_iterator()
+    text, fname, mel, mag = iterator.get_next()
+
+    return text, fname, mel, mag, num_batch
+
+
+text, fname, mel, mag, num_batch = get_batch()
+# print

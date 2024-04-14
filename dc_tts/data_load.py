@@ -1,5 +1,6 @@
 from __future__ import print_function
 
+import tokenizer
 from hyperparams import Hyperparams as hp
 import numpy as np
 import tensorflow as tf
@@ -59,47 +60,47 @@ def load_data(mode="train"):
 
 def get_batch():
     """Loads training data and put them in queues"""
-    with tf.device('/cpu:0'):
-        # Load data
-        fpaths, text_lengths, texts = load_data() # list
-        maxlen, minlen = max(text_lengths), min(text_lengths)
+    # Load data
+    fpaths, text_lengths, texts = load_data() # list
+    maxlen, minlen = max(text_lengths), min(text_lengths)
 
-        # Calc total batch count
-        num_batch = len(fpaths) // hp.B
+    # Create Dataset from tensors
+    dataset = tf.data.Dataset.from_tensor_slices((fpaths, text_lengths, texts))
 
-        # Create Queues
-        fpath, text_length, text = tf.train.slice_input_producer([fpaths, text_lengths, texts], shuffle=True)
+    # Shuffle and batch the dataset
+    dataset = dataset.shuffle(buffer_size=len(fpaths)).batch(hp.B)
 
-        # Parse
-        text = tf.decode_raw(text, tf.int32)  # (None,)
+    # Create iterator
+    iterator = iter(dataset)
 
-        if hp.prepro:
-            def _load_spectrograms(fpath):
-                fname = os.path.basename(fpath)
-                mel = "{}/mels/{}".format("/data/private/multi-speech-corpora/dc_tts/"+hp.lang,
-                                          fname.replace("wav", "npy"))
-                mag = "{}/mags/{}".format("/data/private/multi-speech-corpora/dc_tts/"+hp.lang,
-                                          fname.replace("wav", "npy"))
-                return fname, np.load(mel), np.load(mag)
+    # Get next batch
+    fpath, text_length, text = iterator.get_next()
 
-            fname, mel, mag = tf.py_func(_load_spectrograms, [fpath], [tf.string, tf.float32, tf.float32])
-        else:
-            fname, mel, mag = tf.py_func(load_spectrograms, [fpath], [tf.string, tf.float32, tf.float32])  # (None, n_mels)
+    # Pad text to the maximum length within the batch
+    max_text_length = tf.reduce_max(text_length)
+    text = tf.strings.substr(text, 0, max_text_length)  # Extract substrings of fixed length
 
-        # Add shape information
-        fname.set_shape(())
-        text.set_shape((None,))
-        mel.set_shape((None, hp.n_mels))
-        mag.set_shape((None, hp.n_fft//2+1))
+    # Parse
+    text = tf.io.decode_raw(text, tf.int32)  # (None,)
 
-        # Batching
-        _, (texts, mels, mags, fnames) = tf.contrib.training.bucket_by_sequence_length(
-                                            input_length=text_length,
-                                            tensors=[text, mel, mag, fname],
-                                            batch_size=hp.B,
-                                            bucket_boundaries=[i for i in range(minlen + 1, maxlen - 1, 20)],
-                                            num_threads=8,
-                                            capacity=hp.B*4,
-                                            dynamic_pad=True)
+    if hp.prepro:
+        def _load_spectrograms(fpath):
+            fname = os.path.basename(fpath)
+            mel = "{}/mels/{}".format("/data/private/multi-speech-corpora/dc_tts/"+hp.lang,
+                                      fname.replace("wav", "npy"))
+            mag = "{}/mags/{}".format("/data/private/multi-speech-corpora/dc_tts/"+hp.lang,
+                                      fname.replace("wav", "npy"))
+            return fname, np.load(mel), np.load(mag)
 
-    return texts, mels, mags, fnames, num_batch
+        fname, mel, mag = tf.py_func(_load_spectrograms, [fpath], [tf.string, tf.float32, tf.float32])
+    else:
+        fname, mel, mag = tf.py_func(load_spectrograms, [fpath], [tf.string, tf.float32, tf.float32])  # (None, n_mels)
+
+    # Add shape information
+    fname.set_shape(())
+    text.set_shape((None,))
+    mel.set_shape((None, hp.n_mels))
+    mag.set_shape((None, hp.n_fft//2+1))
+
+    return text, mel, mag, fname, len(fpaths) // hp.B
+
