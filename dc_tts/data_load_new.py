@@ -1,6 +1,5 @@
 from __future__ import print_function
 
-import tokenizer
 from hyperparams import Hyperparams as hp
 import numpy as np
 import tensorflow as tf
@@ -54,8 +53,8 @@ def load_data(mode='train'):
         return texts
 
 
-def decode_dataset(sequence):
-    return ' '.join(tokenizer.index_word[idx] for idx in sequence.numpy() if idx != 0)
+# def decode_dataset(sequence):
+#     return ' '.join(tokenizer.index_word[idx] for idx in sequence.numpy() if idx != 0)
 
 
 def process_data(fpath, text_length, text):

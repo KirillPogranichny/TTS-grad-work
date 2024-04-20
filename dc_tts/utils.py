@@ -144,7 +144,14 @@ def load_spectrograms(fpath):
     '''Read the wave file in `fpath`
     and extracts spectrograms'''
 
-    fname = os.path.basename(fpath)
+    def decode_bytes(byte_string):
+        decoded_string = byte_string.decode('utf-8')
+        return decoded_string
+
+    # Применяем функцию декодирования к каждому элементу тензора
+    decoded_fpath = decode_bytes(fpath.numpy())
+
+    fname = os.path.basename(decoded_fpath)
     mel, mag = get_spectrograms(fpath)
     t = mel.shape[0]
 
