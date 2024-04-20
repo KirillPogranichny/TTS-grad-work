@@ -140,19 +140,15 @@ def learning_rate_decay(init_lr, global_step, warmup_steps = 4000.0):
     step = tf.to_float(global_step + 1)
     return init_lr * warmup_steps**0.5 * tf.minimum(step * warmup_steps**-1.5, step**-0.5)
 
-def load_spectrograms(fpath):
+
+def load_spectrograms(fpath, text_length, text):
     '''Read the wave file in `fpath`
     and extracts spectrograms'''
 
-    def decode_bytes(byte_string):
-        decoded_string = byte_string.decode('utf-8')
-        return decoded_string
 
-    # Применяем функцию декодирования к каждому элементу тензора
-    decoded_fpath = decode_bytes(fpath.numpy())
-
-    fname = os.path.basename(decoded_fpath)
+    fname = os.path.basename(fpath)
     mel, mag = get_spectrograms(fpath)
+
     t = mel.shape[0]
 
     # Marginal padding for reduction shape sync.
@@ -162,7 +158,7 @@ def load_spectrograms(fpath):
 
     # Reduction
     mel = mel[::hp.r, :]
-    return fname, mel, mag
+    return fname, mel, mag, text_length, text
 
 
 def trim(wav, top_db=40, min_silence_sec=0.8):
