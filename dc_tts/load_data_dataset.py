@@ -92,7 +92,7 @@ def get_batch():
                            tf.ensure_shape(mel, (None, hp.n_mels)),
                            tf.ensure_shape(mag, (None, hp.n_fft // 2 + 1)),
                            tf.ensure_shape(text_length, ()),
-                            tf.ensure_shape(text, (None,))))
+                           tf.ensure_shape(text, (None,))))
 
     bucket_boundaries = [i for i in range(minlen + 1, maxlen - 1, 20)]
 
@@ -105,7 +105,7 @@ def get_batch():
         tf.constant(0, dtype=tf.int32))
 
     def _element_length_fn(x):
-        print("Shape of x:", array_ops.shape(x))
+        # print("Shape of x:", array_ops.shape(x))
         return array_ops.shape(x)[0]
 
     def batch_dataset(dataset, batch, bucket_boundaries, padded_shapes, padding_values):
@@ -118,8 +118,16 @@ def get_batch():
             padding_values=padding_values
         )
 
+    for fname, mel, mag, text_length, text in dataset.take(1):
+        print('Before\n', fname, mel, mag, text_length, text)
+
     dataset = batch_dataset(dataset, hp.B, bucket_boundaries, padded_shapes, padding_values)
 
-    return dataset, num_batch
+    for fname, mel, mag, text_length, text in dataset.take(1):
+        print('After\n', fname, mel, mag, text_length, text)
 
-get_batch()
+    return (dataset.map(lambda fname, mel, mag, text_length, text: text),
+            dataset.map(lambda fname, mel, mag, text_length, text: mel),
+            dataset.map(lambda fname, mel, mag, text_length, text: mag),
+            dataset.map(lambda fname, mel, mag, text_length, text: fname),
+            num_batch)
