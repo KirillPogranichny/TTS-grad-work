@@ -2,7 +2,7 @@ from __future__ import print_function
 
 from tqdm import tqdm
 
-from data_load import get_batch, load_vocab
+from load_data_dataset import get_batch, load_vocab
 from hyperparams import Hyperparams as hp
 from modules import *
 from networks import TextEnc, AudioEnc, AudioDec, Attention, SSRN

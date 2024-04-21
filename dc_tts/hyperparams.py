@@ -1,7 +1,7 @@
 class Hyperparams:
     '''Hyper parameters'''
     # pipeline
-    prepro = True  # if True, run `python prepro_torch.py` first before running `python train_torch.py`.
+    prepro = False  # if True, run `python prepro_torch.py` first before running `python train_torch.py`.
 
     # signal processing
     sr = 22050  # Sampling rate.

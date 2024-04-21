@@ -7,7 +7,7 @@ import numpy as np
 import tensorflow as tf
 from train import Graph
 from utils import *
-from data_load import load_data
+from load_data_dataset import load_data
 from scipy.io.wavfile import write
 from tqdm import tqdm
 

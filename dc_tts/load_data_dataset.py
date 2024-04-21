@@ -1,5 +1,7 @@
 from __future__ import print_function
 
+from tensorflow.python.ops import array_ops
+from tensorflow.keras.preprocessing.text import Tokenizer
 from hyperparams import Hyperparams as hp
 from utils import *
 import codecs
@@ -49,24 +51,6 @@ def load_data(mode='train'):
         return texts
 
 
-def text_to_int(text):
-    unicode_text = tf.strings.unicode_decode(text, input_encoding='UTF-8')
-    # Преобразуем строки Unicode в числовые значения tf.int32
-    int_text = tf.cast(unicode_text, tf.int32)
-    return int_text
-
-
-def bucket_batch_dataset(dataset, batch_size, bucket_boundaries, padded_shapes, padding_values):
-    # Создаем пакеты данных с использованием bucket_by_sequence_length
-    return dataset.experimental.bucket_by_sequence_length(
-        lambda fname, mel, mag, text_length, text: text_length,
-        bucket_boundaries=bucket_boundaries,
-        bucket_batch_sizes=[batch_size] * (len(bucket_boundaries) + 1),
-        padded_shapes=padded_shapes,
-        padding_values=padding_values
-    )
-
-
 def get_batch():
     fpaths, text_lengths, texts = load_data()
 
@@ -74,9 +58,16 @@ def get_batch():
     num_batch = len(fpaths) // hp.B
 
     dataset = tf.data.Dataset.from_tensor_slices((fpaths, text_lengths, texts))
+    # for fpath, text_length, text in dataset.take(1):
+    #     print(text)
     dataset = dataset.shuffle(buffer_size=len(fpaths))
+    # for fpath, text_length, text in dataset.take(1):
+    #     print(text)
     dataset = dataset.map(lambda fpath, text_length, text:
-                          (fpath, text_length, text_to_int(text)))
+                          (fpath, text_length, tf.io.decode_raw(text, tf.int32)))
+    # for fpath, text_length, text in dataset.take(1):
+    #     print(fpath)
+    #     print(text)
 
     if hp.prepro:
 
@@ -87,26 +78,48 @@ def get_batch():
             return fname, mel, mag, text_length, text
 
         dataset = dataset.map(lambda fpath, text_length, text:
-                              tf.py_function(_load_spectrograms, [fpath.numpy().decode('utf-8'), text_length, text],
+                              tf.py_function(lambda f, tl, t: _load_spectrograms(f.numpy().decode('utf-8'), tl, t),
+                                             [fpath, text_length, text],
                                              [tf.string, tf.float32, tf.float32, tf.int32, tf.int32]))
     else:
         dataset = dataset.map(lambda fpath, text_length, text:
-                              tf.py_function(load_spectrograms, [fpath.numpy().decode('utf-8'), text_length, text],
+                              tf.py_function(lambda f, tl, t: load_spectrograms(f.numpy().decode('utf-8'), tl, t),
+                                             [fpath, text_length, text],
                                              [tf.string, tf.float32, tf.float32, tf.int32, tf.int32]))
 
-    # dataset = dataset.map(lambda fname, mel, mag, text_length, text:
-    #                       (fname, mel, mag, text_length, text,
-    #                        tf.ensure_shape(fname, ()), tf.ensure_shape(mel, (None, hp.n_mels)),
-    #                        tf.ensure_shape(mag, (None, hp.n_fft // 2 + 1)), tf.ensure_shape(mag, (None,))))
+    dataset = dataset.map(lambda fname, mel, mag, text_length, text:
+                          (tf.ensure_shape(fname, ()),
+                           tf.ensure_shape(mel, (None, hp.n_mels)),
+                           tf.ensure_shape(mag, (None, hp.n_fft // 2 + 1)),
+                           tf.ensure_shape(text_length, ()),
+                            tf.ensure_shape(text, (None,))))
 
     bucket_boundaries = [i for i in range(minlen + 1, maxlen - 1, 20)]
 
     # Определяем формы пакетов данных
-    padded_shapes = ((), (None, hp.n_mels), (None, hp.n_fft // 2 + 1), (), ())
+    padded_shapes = ((), (None, hp.n_mels), (None, hp.n_fft // 2 + 1), (), (None,))
     padding_values = (
-        '', tf.constant(0, dtype=tf.float32), tf.constant(0, dtype=tf.float32),
-        tf.constant(0, dtype=tf.int32), tf.constant(0, dtype=tf.int32))
+        '', tf.constant(0, dtype=tf.float32),
+        tf.constant(0, dtype=tf.float32),
+        tf.constant(0, dtype=tf.int32),
+        tf.constant(0, dtype=tf.int32))
 
-    dataset = bucket_batch_dataset(dataset, hp.B, bucket_boundaries, padded_shapes, padding_values)
+    def _element_length_fn(x):
+        print("Shape of x:", array_ops.shape(x))
+        return array_ops.shape(x)[0]
+
+    def batch_dataset(dataset, batch, bucket_boundaries, padded_shapes, padding_values):
+        # Создаем пакеты данных с использованием bucket_by_sequence_length
+        return dataset.bucket_by_sequence_length(
+            element_length_func=lambda *args: _element_length_fn(args[4]),
+            bucket_boundaries=bucket_boundaries,
+            bucket_batch_sizes=[batch] * (len(bucket_boundaries) + 1),
+            # padded_shapes=padded_shapes
+            padding_values=padding_values
+        )
+
+    dataset = batch_dataset(dataset, hp.B, bucket_boundaries, padded_shapes, padding_values)
 
     return dataset, num_batch
+
+get_batch()
