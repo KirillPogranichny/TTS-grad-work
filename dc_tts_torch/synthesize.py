@@ -10,7 +10,8 @@ from tqdm import *
 import numpy as np
 import torch
 
-from models import Text2Mel, SSRN
+from models.text2mel import Text2Mel
+from models.ssrn import SSRN
 from hparams import HParams as hp
 from audio import save_to_wav
 from utils import get_last_checkpoint_file_name, load_checkpoint, save_to_png
@@ -23,26 +24,27 @@ if args.dataset == 'ljspeech':
     from datasets.lj_speech import vocab, get_test_data
 
     SENTENCES = [
-        "The birch canoe slid on the smooth planks.",
-        "Glue the sheet to the dark blue background.",
-        "It's easy to tell the depth of a well.",
-        "These days a chicken leg is a rare dish.",
-        "Rice is often served in round bowls.",
-        "The juice of lemons makes fine punch.",
-        "The box was thrown beside the parked truck.",
-        "The hogs were fed chopped corn and garbage.",
-        "Four hours of steady work faced us.",
-        "Large size in stockings is hard to sell.",
-        "The boy was there when the sun rose.",
-        "A rod is used to catch pink salmon.",
-        "The source of the huge river is the clear spring.",
-        "Kick the ball straight and follow through.",
-        "Help the woman get back to her feet.",
-        "A pot of tea helps to pass the evening.",
-        "Smoky fires lack flame and heat.",
-        "The soft cushion broke the man's fall.",
-        "The salt breeze came across from the sea.",
-        "The girl at the booth sold fifty bonds."
+        "Far Eastern Federal University is the best place to study maths"
+        # "The birch canoe slid on the smooth planks.",
+        # "Glue the sheet to the dark blue background.",
+        # "It's easy to tell the depth of a well.",
+        # "These days a chicken leg is a rare dish.",
+        # "Rice is often served in round bowls.",
+        # "The juice of lemons makes fine punch.",
+        # "The box was thrown beside the parked truck.",
+        # "The hogs were fed chopped corn and garbage.",
+        # "Four hours of steady work faced us.",
+        # "Large size in stockings is hard to sell.",
+        # "The boy was there when the sun rose.",
+        # "A rod is used to catch pink salmon.",
+        # "The source of the huge river is the clear spring.",
+        # "Kick the ball straight and follow through.",
+        # "Help the woman get back to her feet.",
+        # "A pot of tea helps to pass the evening.",
+        # "Smoky fires lack flame and heat.",
+        # "The soft cushion broke the man's fall.",
+        # "The salt breeze came across from the sea.",
+        # "The girl at the booth sold fifty bonds."
     ]
 else:
     from datasets.ru_speech import vocab, get_test_data
@@ -106,7 +108,7 @@ for i in range(len(SENTENCES)):
     A = A.cpu().detach().numpy()
     Z = Z.cpu().detach().numpy()
 
-    save_to_png('samples/%d-att.png' % (i + 1), A[0, :, :])
-    save_to_png('samples/%d-mel.png' % (i + 1), Y[0, :, :])
-    save_to_png('samples/%d-mag.png' % (i + 1), Z[0, :, :])
-    save_to_wav(Z[0, :, :].T, 'samples/%d-wav.wav' % (i + 1))
+    save_to_png('dc_tts_torch/samples/%d-att.png' % (i + 21), A[0, :, :])
+    save_to_png('dc_tts_torch/samples/%d-mel.png' % (i + 21), Y[0, :, :])
+    save_to_png('dc_tts_torch/samples/%d-mag.png' % (i + 21), Z[0, :, :])
+    save_to_wav(Z[0, :, :].T, 'dc_tts_torch/samples/%d-wav.wav' % (i + 21))
