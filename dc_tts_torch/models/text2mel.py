@@ -1,11 +1,3 @@
-"""
-Hideyuki Tachibana, Katsuya Uenoyama, Shunsuke Aihara
-Efficiently Trainable Text-to-Speech System Based on Deep Convolutional Networks with Guided Attention
-https://arxiv.org/abs/1710.08969
-
-Text2Mel Network.
-"""
-__author__ = 'Erdene-Ochir Tuguldur'
 __all__ = ['Text2Mel']
 
 import numpy as np
@@ -19,11 +11,13 @@ from .layers import E, C, HighwayBlock, GatedConvBlock, ResidualBlock
 
 
 def Conv(in_channels, out_channels, kernel_size, dilation, causal=False, nonlinearity='linear'):
+    '''Convolutional layer with optional causal and nonlinearity.'''
     return C(in_channels, out_channels, kernel_size, dilation, causal=causal,
              weight_init=hp.text2mel_weight_init, normalization=hp.text2mel_normalization, nonlinearity=nonlinearity)
 
 
 def BasicBlock(d, k, delta, causal=False):
+    '''Basic block of the model, can be gated conv, highway or residual.'''
     if hp.text2mel_basic_block == 'gated_conv':
         return GatedConvBlock(d, k, delta, causal=causal,
                               weight_init=hp.text2mel_weight_init, normalization=hp.text2mel_normalization)
@@ -37,10 +31,12 @@ def BasicBlock(d, k, delta, causal=False):
 
 
 def CausalConv(in_channels, out_channels, kernel_size, dilation, nonlinearity='linear'):
+    '''Causal convolutional layer.'''
     return Conv(in_channels, out_channels, kernel_size, dilation, causal=True, nonlinearity=nonlinearity)
 
 
 def CausalBasicBlock(d, k, delta):
+    '''Causal basic block.'''
     return BasicBlock(d, k, delta, causal=True)
 
 
@@ -74,8 +70,11 @@ class TextEnc(nn.Module):
             Conv(e, 2 * d, 1, 1, nonlinearity='relu'),
             Conv(2 * d, 2 * d, 1, 1),
 
-            BasicBlock(2 * d, 3, 1), BasicBlock(2 * d, 3, 3), BasicBlock(2 * d, 3, 9), BasicBlock(2 * d, 3, 27),
-            BasicBlock(2 * d, 3, 1), BasicBlock(2 * d, 3, 3), BasicBlock(2 * d, 3, 9), BasicBlock(2 * d, 3, 27),
+            BasicBlock(2 * d, 3, 1), BasicBlock(2 * d, 3, 3),
+            BasicBlock(2 * d, 3, 9), BasicBlock(2 * d, 3, 27),
+
+            BasicBlock(2 * d, 3, 1), BasicBlock(2 * d, 3, 3),
+            BasicBlock(2 * d, 3, 9), BasicBlock(2 * d, 3, 27),
 
             BasicBlock(2 * d, 3, 1), BasicBlock(2 * d, 3, 1),
 

@@ -21,11 +21,11 @@ def embed(inputs, vocab_size, num_units, zero_pad=True, scope="embedding", reuse
       A `Tensor` with one more rank than inputs's. The last dimensionality
         should be `num_units`.
     '''
-    with tf.variable_scope(scope, reuse=reuse):
-        lookup_table = tf.get_variable('lookup_table',
+    with tf.compat.v1.variable_scope(scope, reuse=reuse):
+        lookup_table = tf.compat.v1.get_variable('lookup_table',
                                        dtype=tf.float32,
                                        shape=[vocab_size, num_units],
-                                       initializer=tf.truncated_normal_initializer(mean=0.0, stddev=0.1))
+                                       initializer=tf.compat.v1.truncated_normal_initializer(mean=0.0, stddev=0.1))
         if zero_pad:
             lookup_table = tf.concat((tf.zeros(shape=[1, num_units]),
                                       lookup_table[1:, :]), 0)
@@ -58,7 +58,7 @@ def normalize(inputs,
 
 
 def highwaynet(inputs, num_units=None, scope="highwaynet", reuse=None):
-    '''Highway networks, see https://arxiv.org/abs/1505.00387
+    '''Highway networks.py, see https://arxiv.org/abs/1505.00387
 
     Args:
       inputs: A 3D tensor of shape [N, T, W].
@@ -74,7 +74,7 @@ def highwaynet(inputs, num_units=None, scope="highwaynet", reuse=None):
     if not num_units:
         num_units = inputs.get_shape()[-1]
 
-    with tf.variable_scope(scope, reuse=reuse):
+    with tf.compat.v1.variable_scope(scope, reuse=reuse):
         H = tf.layers.dense(inputs, units=num_units, activation=tf.nn.relu, name="dense1")
         T = tf.layers.dense(inputs, units=num_units, activation=tf.nn.sigmoid,
                             bias_initializer=tf.constant_initializer(-1.0), name="dense2")
@@ -111,7 +111,7 @@ def conv1d(inputs,
     Returns:
       A masked tensor of the same shape and dtypes as `inputs`.
     '''
-    with tf.variable_scope(scope):
+    with tf.compat.v1.variable_scope(scope):
         if padding.lower() == "causal":
             # pre-padding for causality
             pad_len = (size - 1) * rate  # padding size
@@ -164,7 +164,7 @@ def hc(inputs,
       A masked tensor of the same shape and dtypes as `inputs`.
     '''
     _inputs = inputs
-    with tf.variable_scope(scope):
+    with tf.compat.v1.variable_scope(scope):
         if padding.lower() == "causal":
             # pre-padding for causality
             pad_len = (size - 1) * rate  # padding size
@@ -220,7 +220,7 @@ def conv1d_transpose(inputs,
         Returns:
           A tensor of the shape with [batch, time*2, depth].
         '''
-    with tf.variable_scope(scope, reuse=reuse):
+    with tf.compat.v1.variable_scope(scope, reuse=reuse):
         if filters is None:
             filters = inputs.get_shape().as_list()[-1]
         inputs = tf.expand_dims(inputs, 1)

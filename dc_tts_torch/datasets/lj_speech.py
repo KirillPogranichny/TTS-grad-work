@@ -1,10 +1,8 @@
-"""Data loader for the LJSpeech dataset. See: https://keithito.com/LJ-Speech-Dataset/"""
 import os
 import re
 import codecs
 import unicodedata
 import numpy as np
-
 from torch.utils.data import Dataset
 
 vocab = "PE abcdefghijklmnopqrstuvwxyz'.?"  # P: Padding, E: EOS.
@@ -12,38 +10,6 @@ char2idx = {char: idx for idx, char in enumerate(vocab)}
 idx2char = {idx: char for idx, char in enumerate(vocab)}
 
 
-# Производим нормализацию алфавита с помощью декомпозиции NFD https://habr.com/ru/articles/45489/
-# NFD раскладывает сложные символы вроде "é" на "e" и символ с акутом
-''' 'Lu': Letter, Uppercase (Заглавная буква)
-    'Ll': Letter, Lowercase (Строчная буква)
-    'Lt': Letter, Titlecase (Заглавная буква в начале слова)
-    'Lm': Letter, Modifier (Модификатор буквы)
-    'Lo': Letter, Other (Другая буква)
-    'Mn': Mark, Non-Spacing (Неразрывный знак)
-    'Mc': Mark, Spacing Combining (Разрывный знак)
-    'Me': Mark, Enclosing (Окружающий знак)
-    'Nd': Number, Decimal Digit (Десятичная цифра)
-    'Nl': Number, Letter (Буквенная цифра)
-    'No': Number, Other (Другое число)
-    'Pc': Punctuation, Connector (Соединительный знак)
-    'Pd': Punctuation, Dash (Тире)
-    'Ps': Punctuation, Open (Открывающий знак)
-    'Pe': Punctuation, Close (Закрывающий знак)
-    'Pi': Punctuation, Initial Quote (Начальный кавычки)
-    'Pf': Punctuation, Final Quote (Конечный кавычки)
-    'Po': Punctuation, Other (Другой знак препинания)
-    'Sm': Symbol, Math (Математический символ)
-    'Sc': Symbol, Currency (Валютный символ)
-    'Sk': Symbol, Modifier (Модификаторный символ)
-    'So': Symbol, Other (Другой символ)
-    'Zs': Separator, Space (Пробел)
-    'Zl': Separator, Line (Линия переноса)
-    'Zp': Separator, Paragraph (Параграф)
-    'Cc': Other, Control (Управляющий символ)
-    'Cf': Other, Format (Форматный символ)
-    'Cs': Other, Surrogate (Замещающий символ)
-    'Co': Other, Private Use (Символ для частного использования)
-    'Cn': Other, Not Assigned (Не назначен)'''
 def text_normalize(text):
     text = ''.join(char for char in unicodedata.normalize('NFD', text)
                    if unicodedata.category(char) != 'Mn')  # Strip accents
@@ -95,16 +61,19 @@ class LJSpeech(Dataset):
 
     def __getitem__(self, index):
         data = {}
-        if 'texts' in self.keys:
-            data['texts'] = self.texts[index]
-        if 'mels' in self.keys:
-            # (39, 80)
-            data['mels'] = np.load(os.path.join(self.path, 'mels', "%s.npy" % self.fnames[index]))
-        if 'mags' in self.keys:
-            # (39, 80)
-            data['mags'] = np.load(os.path.join(self.path, 'mags', "%s.npy" % self.fnames[index]))
-        if 'mel_gates' in self.keys:
-            data['mel_gates'] = np.ones(data['mels'].shape[0], dtype=np.int32)  # TODO: because pre processing!
-        if 'mag_gates' in self.keys:
-            data['mag_gates'] = np.ones(data['mags'].shape[0], dtype=np.int32)  # TODO: because pre processing!
+        available_keys = ['texts', 'mels', 'mags', 'mel_gates', 'mag_gates']
+
+        for key in available_keys:
+            if key in self.keys:
+                if key == 'texts':
+                    data[key] = self.texts[index]
+                elif key == 'mels':
+                    data[key] = np.load(os.path.join(self.path, 'mels', f'{self.fnames[index]}.npy'))
+                elif key == 'mags':
+                    data[key] = np.load(os.path.join(self.path, 'mags', f'{self.fnames[index]}.npy'))
+                elif key == 'mel_gates':
+                    data[key] = np.ones(data['mels'].shape[0], dtype=np.int32)
+                elif key == 'mag_gates':
+                    data[key] = np.ones(data['mags'].shape[0], dtype=np.int32)
+
         return data

@@ -39,26 +39,26 @@ class Graph:
             self.prev_max_attentions = tf.placeholder(tf.int32, shape=(None,))
 
         if num == 1 or (not training):
-            # with tf.variable_scope("Text2Mel"):
-            # Get S or decoder inputs. (B, T//r, n_mels)
-            self.S = tf.concat((tf.zeros_like(next(iter(self.mels))[:, :1, :]), next(iter(self.mels))[:, :-1, :]), 1)
+            with tf.compat.v1.variable_scope("Text2Mel"):
+                # Get S or decoder inputs. (B, T//r, n_mels)
+                self.S = tf.concat((tf.zeros_like(next(iter(self.mels))[:, :1, :]), next(iter(self.mels))[:, :-1, :]), 1)
 
-            # Networks
-            # with tf.variable_scope("TextEnc"):
-            self.K, self.V = TextEnc(self.L, training=training)  # (N, Tx, e)
+                # Networks
+                with tf.compat.v1.variable_scope("TextEnc"):
+                    self.K, self.V = TextEnc(self.L, training=training)  # (N, Tx, e)
 
-            # with tf.variable_scope("AudioEnc"):
-            self.Q = AudioEnc(self.S, training=training)
+                with tf.compat.v1.variable_scope("AudioEnc"):
+                    self.Q = AudioEnc(self.S, training=training)
 
-            # with tf.variable_scope("Attention"):
-            # R: (B, T/r, 2d)
-            # alignments: (B, N, T/r)
-            # max_attentions: (B,)
-            self.R, self.alignments, self.max_attentions = Attention(self.Q, self.K, self.V,
-                                                                     mononotic_attention=(not training),
-                                                                     prev_max_attentions=self.prev_max_attentions)
-            # with tf.variable_scope("AudioDec"):
-            self.Y_logits, self.Y = AudioDec(self.R, training=training)  # (B, T/r, n_mels)
+                with tf.compat.v1.variable_scope("Attention"):
+                    # R: (B, T/r, 2d)
+                    # alignments: (B, N, T/r)
+                    # max_attentions: (B,)
+                    self.R, self.alignments, self.max_attentions = Attention(self.Q, self.K, self.V,
+                                                                             mononotic_attention=(not training),
+                                                                             prev_max_attentions=self.prev_max_attentions)
+                with tf.compat.v1.variable_scope("AudioDec"):
+                    self.Y_logits, self.Y = AudioDec(self.R, training=training)  # (B, T/r, n_mels)
         else:  # num==2 & training. Note that during training,
             # the ground truth melspectrogram values are fed.
             # with tf.variable_scope("SSRN"):
@@ -66,11 +66,11 @@ class Graph:
 
         if not training:
             # During inference, the predicted melspectrogram values are fed.
-            # with tf.variable_scope("SSRN"):
-            self.Z_logits, self.Z = SSRN(self.Y, training=training)
+            with tf.compat.v1.variable_scope("SSRN"):
+                self.Z_logits, self.Z = SSRN(self.Y, training=training)
 
-        # with tf.variable_scope("gs"):
-        self.global_step = tf.Variable(0, name='global_step', trainable=False)
+        with tf.compat.v1.variable_scope("gs"):
+            self.global_step = tf.Variable(0, name='global_step', trainable=False)
 
         if training:
             if num == 1:  # Text2Mel

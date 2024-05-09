@@ -1,7 +1,3 @@
-#!/usr/bin/env python
-"""Train the Text2Mel network. See: https://arxiv.org/abs/1710.08969"""
-__author__ = 'Erdene-Ochir Tuguldur'
-
 import sys
 import time
 import argparse
@@ -22,56 +18,39 @@ from datasets.data_loader import Text2MelDataLoader
 
 if __name__ == '__main__':
 
-    '''Создаем парсер с указанием его описания'''
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    '''Помещаем датасеты, один из которых выберем в терминале'''
-    parser.add_argument("--dataset", required=True, choices=['ljspeech', 'mbspeech'], help='dataset name')
-    '''В args попадает результат разбора аргументов командной строки'''
+    parser.add_argument("--dataset", required=True, choices=['ljspeech', 'ruspeech'], help='dataset name')
     args = parser.parse_args()
 
     if args.dataset == 'ljspeech':
         from datasets.lj_speech import vocab, LJSpeech as SpeechDataset
     else:
-        from datasets.ru_speech import vocab, MBSpeech as SpeechDataset
+        from datasets.ru_speech import vocab, RUSpeech as SpeechDataset
 
     use_gpu = torch.cuda.is_available()
-    print('use_gpu', use_gpu)
-    '''cuDNN проводит бенчмарк различных алгоритмов свертки во время первого прохода прямого распространения модели.
-       Затем cuDNN выбирает самый быстрый алгоритм для последующих вычислений, что может улучшить производительность'''
+    print(f'use_gpu: {use_gpu}')
     if use_gpu:
         torch.backends.cudnn.benchmark = True
 
-    train_data_loader = Text2MelDataLoader(text2mel_dataset=SpeechDataset(['texts', 'mels', 'mel_gates']), batch_size=64,
-                                           mode='train')
-    valid_data_loader = Text2MelDataLoader(text2mel_dataset=SpeechDataset(['texts', 'mels', 'mel_gates']), batch_size=64,
-                                           mode='valid')
+    train_data_loader = Text2MelDataLoader(text2mel_dataset=SpeechDataset(['texts', 'mels', 'mel_gates']),
+                                           batch_size=64, mode='train')
+    valid_data_loader = Text2MelDataLoader(text2mel_dataset=SpeechDataset(['texts', 'mels', 'mel_gates']),
+                                           batch_size=64, mode='valid')
 
     text2mel = Text2Mel(vocab).cuda()
 
-    '''Adam (Adaptive Moment Estimation) - алгоритм для обновления весов модели в процессе обучения.
-          Принцип работы:
-       1. Инициализация:
-                Передаем параметры модели, которые должны быть оптимизированы, и дополнительные параметры, такие как 
-                скорость обучения (lr), коэффициенты моментов (betas), и коэффициент регуляризации (weight_decay).
-                Эти параметры определяют, как оптимизатор будет обновлять веса модели.
-       2. Обновление весов:
-                Adam использует два момента (среднее значение градиентов и среднее значение квадратов градиентов) 
-                для адаптивного изменения скорости обучения для каждого веса.
-                Это позволяет оптимизатору быстро сходиться к оптимальным значениям весов,
-                даже если начальные скорости обучения выбраны неоптимально.'''
     optimizer = torch.optim.Adam(text2mel.parameters(), lr=hp.text2mel_lr)
 
     start_timestamp = int(time.time() * 1000)
     start_epoch = 0
     global_step = 0
 
-    '''Запись результатов работы в файлы событий, находящиеся в папке logdir'''
     logger = Logger(args.dataset, 'text2mel')
 
-    # load the last checkpoint if exists
+    # Загружаем последний чекпоинт, если он существует
     last_checkpoint_file_name = get_last_checkpoint_file_name(logger.logdir)
     if last_checkpoint_file_name:
-        print("loading the last checkpoint: %s" % last_checkpoint_file_name)
+        print(f"Загружаем последний чекпоинт: {last_checkpoint_file_name}")
         start_epoch, global_step = load_checkpoint(last_checkpoint_file_name, text2mel, optimizer)
 
 
@@ -88,7 +67,7 @@ if __name__ == '__main__':
         global global_step
 
         lr_decay(global_step)
-        print("epoch %3d with lr=%.02e" % (train_epoch, get_lr()))
+        print(f"epoch {train_epoch:3d} with lr={get_lr():.02e}")
 
         text2mel.train() if phase == 'train' else text2mel.eval()
         torch.set_grad_enabled(True) if phase == 'train' else torch.set_grad_enabled(False)
@@ -102,12 +81,12 @@ if __name__ == '__main__':
         pbar = tqdm(data_loader, unit="audios", unit_scale=data_loader.batch_size, disable=hp.disable_progress_bar)
         for batch in pbar:
             L, S, gates = batch['texts'], batch['mels'], batch['mel_gates']
-            S = S.permute(0, 2, 1)  # TODO: because of pre processing
+            S = S.permute(0, 2, 1)
 
             B, N = L.size()  # batch size and text count
             _, n_mels, T = S.size()  # number of melspectrogram bins and time
 
-            assert gates.size(0) == B  # TODO: later remove
+            assert gates.size(0) == B
             assert gates.size(1) == T
 
             S_shifted = torch.cat((S[:, :, 1:], torch.zeros(B, n_mels, 1)), 2)
@@ -176,14 +155,16 @@ if __name__ == '__main__':
     while True:
         train_epoch_loss = train(epoch, phase='train')
         time_elapsed = time.time() - since
-        time_str = 'total time elapsed: {:.0f}h {:.0f}m {:.0f}s '.format(time_elapsed // 3600, time_elapsed % 3600 // 60,
-                                                                         time_elapsed % 60)
-        print("train epoch loss %f, step=%d, %s" % (train_epoch_loss, global_step, time_str))
+        time_str = (f'total time elapsed: '
+                    f'{time_elapsed // 3600:.0f}h '
+                    f'{time_elapsed % 3600 // 60:.0f}m '
+                    f'{time_elapsed % 60:.0f}s')
+        print(f'train epoch loss {train_epoch_loss}, step={global_step}, {time_str}')
 
         valid_epoch_loss = train(epoch, phase='valid')
-        print("valid epoch loss %f" % valid_epoch_loss)
+        print(f'valid epoch loss {valid_epoch_loss}')
 
         epoch += 1
         if global_step >= hp.text2mel_max_iteration:
-            print("max step %d (current step %d) reached, exiting..." % (hp.text2mel_max_iteration, global_step))
+            print(f'max step {hp.text2mel_max_iteration} (current step {global_step}) reached, exiting...')
             sys.exit(0)

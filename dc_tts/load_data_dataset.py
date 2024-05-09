@@ -1,7 +1,6 @@
 from __future__ import print_function
 
 from tensorflow.python.ops import array_ops
-from tensorflow.keras.preprocessing.text import Tokenizer
 from hyperparams import Hyperparams as hp
 from utils import *
 import codecs
@@ -73,8 +72,8 @@ def get_batch():
 
         def _load_spectrograms(fpath, text_length, text):
             fname = os.path.basename(fpath)
-            mel = f"mels/{fname.replace("wav", "npy")}"
-            mag = f"mags/{fname.replace("wav", "npy")}"
+            mel = f"mels/{fname.replace('wav', 'npy')}"
+            mag = f"mags/{fname.replace('wav', 'npy')}"
             return fname, mel, mag, text_length, text
 
         dataset = dataset.map(lambda fpath, text_length, text:

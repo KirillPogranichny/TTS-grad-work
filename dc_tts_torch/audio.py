@@ -1,9 +1,7 @@
-"""These methods are copied from https://github.com/Kyubyong/dc_tts/"""
-
 import os
 import copy
 import librosa
-import scipy.io.wavfile
+import scipy.io.wavfile as wavfile
 import numpy as np
 import shutil
 
@@ -14,16 +12,16 @@ from datasets.ru_speech import RUSpeech
 
 
 def spectrogram2wav(mag):
-    '''# Generate wave file from linear magnitude spectrogram
+    ''' Генерация wav файла из спектрограммы
     Args:
       mag: A numpy array of (T, 1+n_fft//2)
     Returns:
       wav: A 1-D numpy array.
     '''
-    # transpose
+    # Транспонирование
     mag = mag.T
 
-    # de-noramlize
+    # Денормализация
     mag = (np.clip(mag, 0, 1) * hp.max_db) - hp.max_db + hp.ref_db
 
     # to amplitude
@@ -35,14 +33,19 @@ def spectrogram2wav(mag):
     # de-preemphasis
     wav = signal.lfilter([1], [1, -hp.preemphasis], wav)
 
-    # trim
+    # Обрезка
     wav, _ = librosa.effects.trim(wav)
 
     return wav.astype(np.float32)
 
 
 def griffin_lim(spectrogram):
-    '''Applies Griffin-Lim's raw.'''
+    '''Применяет алгоритм Грифиина-Лима для восстановления сигнала из спектрограммы
+    Args:
+      spectrogram (numpy.ndarray): Спектрограммма, из которой нужно восстановить сигнал.
+    Return:
+      y (numpy.ndarray): Восстановленный сигнал.
+    '''
     X_best = copy.deepcopy(spectrogram)
     for i in range(hp.n_iter):
         X_t = invert_spectrogram(X_best)
@@ -64,90 +67,48 @@ def invert_spectrogram(spectrogram):
 
 
 def get_spectrograms(fpath):
-    '''Parse the wave file in `fpath` and
-    Returns normalized melspectrogram and linear spectrogram.
+    '''Функция для получения спектрограмм и мел-спектрограмм из wav файлов.
     Args:
-      fpath: A string. The full path of a sound file.
+      fpath(str): The full path of a sound file.
     Returns:
-      mel: A 2d array of shape (T, n_mels) and dtype of float32.
-      mag: A 2d array of shape (T, 1+n_fft/2) and dtype of float32.
+      mel: A 2d array of shape (T, n_mels) and dtype of float32.  # Мел-спектрограмма
+      mag: A 2d array of shape (T, 1+n_fft/2) and dtype of float32.  # Спектрограмма
     '''
-    # Loading sound file
-    '''Возвращаемые данные представляют собой временные ряды аудиоданных в виде чисел с плавающей точкой. 
-       Это означает, что каждое значение в массиве представляет собой амплитуду звукового сигнала в определенный момент.
-       Эти данные не имеют единиц измерения и не представляют давление звукового давления. 
-       Вместо этого, они представляют абсолютную амплитуду звукового сигнала'''
-    y, sr = librosa.load(fpath, sr=hp.sr)
+    # Загрузка аудиофайла
+    try:
+        y, sr = librosa.load(fpath, sr=hp.sr)
+    except Exception as e:
+        print(f'Ошибка при загрузке файла {fpath}: {e}')
+        return None, None
 
-    # Trimming:
-    '''Аудиоданные обрезаются по началу и концу, чтобы удалить нежелательные шумы или тишину.'''
+    # Обрезка
     y, _ = librosa.effects.trim(y)
 
-    # Preemphasis
-    '''Применяется предварительное усиление, чтобы уменьшить высокочастотные компоненты сигнала,
-       что помогает улучшить качество последующих преобразований.
-       Это делается путем вычитания части предыдущего значения из каждого текущего значения,
-       умноженного на коэффициент предварительного усиления hp.preemphasis'''
+    # Преэмфазирование
     y = np.append(y[0], y[1:] - hp.preemphasis * y[:-1])
 
-    # stft
-    '''Выполняется кратковременное преобразование Фурье (STFT).
-       Это преобразование позволяет анализировать частотные характеристики аудиосигнала в различных временных окнах.
-             Принцип работы:
-          1. Выбор и применение окна к сигналу: 
-                Окно — это весовая функция, которая применяется к сигналу для выделения интересующего его фрагмента.
-                Применение окна к сигналу позволяет сформировать "видимую" часть сигнала.
-                Окно скачкообразно двигается по исходному сигналу, и для каждого положения окна 
-                вычисляется дискретное преобразование Фурье (ДПФ) оконных данных.
-                Это позволяет получить спектральные характеристики сигнала в каждом временном срезе.
-                
-                Выбор оконной функции важен, поскольку разные функции окна могут влиять на результаты анализа. 
-                Например, гауссово окно обеспечивает плавное затухание в начале и конце окна, 
-                что может быть предпочтительным для сигналов с постепенным изменением амплитуды. 
-                Трапециевидное окно, с другой стороны, обеспечивает более резкий переход к нулю в начале и конце окна, 
-                что может быть полезно для сигналов с четкими границами.
-                
-          2. Вычисление преобразования Фурье:
-                [X[k] = sum_{n=0}^{N-1} x[n] \cdot e^{-j\frac{2\pi}{N}kn}]
-                Преобразование Фурье применяется к каждому извлеченному фрагменту сигнала. 
-                Это дает комплексное представление каждого фрагмента, где амплитуда и фаза соответствуют частотам
-                
-          3. Построение спектрограммы:
-                Результаты преобразования Фурье для всех фрагментов собираются вместе, чтобы создать спектрограмму. 
-                На оси X отображается время, на оси Y — частоты, а значения в матрице представляют амплитуды 
-                или мощности на соответствующих частотах в каждый момент времени'''
+    # Кратковременное преобразование Фурье
     linear = librosa.stft(y=y,
                           n_fft=hp.n_fft,
                           hop_length=hp.hop_length,
                           win_length=hp.win_length)
 
-    # magnitude spectrogram
-    '''Получение магнитудного спектрограммного представления, 
-       которое показывает амплитудные характеристики аудиосигнала в частотной области'''
+    # Спектрограмма
     mag = np.abs(linear)  # (1+n_fft//2, T)
 
-    # mel spectrogram
-    '''Сначала создается базис мел-фильтров с помощью librosa.filters.mel(sr=hp.sr, n_fft=hp.n_fft, n_mels=hp.n_mels),
-       а затем применяется к магнитудному спектрограммному представлению для получения мел-спектрограммы.
-       Мел-спектрограмма используется для анализа аудиосигналов с точки зрения восприятия человеком'''
+    # Мел-спектрограмма
     mel_basis = librosa.filters.mel(sr=hp.sr, n_fft=hp.n_fft, n_mels=hp.n_mels)  # (n_mels, 1+n_fft//2)
     mel = np.dot(mel_basis, mag)  # (n_mels, t)
 
-    # to decibel
-    '''Магнитудные и мел-спектрограммы преобразуются в децибелы для улучшения визуализации и анализа'''
+    # Преобразование в децибелы
     mel = 20 * np.log10(np.maximum(1e-5, mel))
     mag = 20 * np.log10(np.maximum(1e-5, mag))
 
-    # normalize
-    '''Спектрограммы нормализуются, чтобы их диапазон значений был одинаковым.
-       Это делается для улучшения обучения и работы с нейронными сетями,
-       так как они лучше работают с нормализованными данными'''
+    # Нормализация
     mel = np.clip((mel - hp.ref_db + hp.max_db) / hp.max_db, 1e-8, 1)
     mag = np.clip((mag - hp.ref_db + hp.max_db) / hp.max_db, 1e-8, 1)
 
-    # Transpose
-    '''Спектрограммы переворачиваются, чтобы изменить формат с (частота, время) на (время, частота),
-       что удобно для дальнейшей обработки и анализа'''
+    # Транспонирование
     mel = mel.T.astype(np.float32)  # (T, n_mels)
     mag = mag.T.astype(np.float32)  # (T, 1+n_fft//2)
 
@@ -157,7 +118,12 @@ def get_spectrograms(fpath):
 def save_to_wav(mag, filename):
     """Generate and save an audio file from the given linear spectrogram using Griffin-Lim."""
     wav = spectrogram2wav(mag)
-    scipy.io.wavfile.write(filename, hp.sr, wav)
+
+    try:
+        wavfile.write(filename, hp.sr, wav)
+        print(f"Аудиофайл '{filename}' успешно сохранен.")
+    except Exception as e:
+        print(f"Ошибка при сохранении аудиофайла '{filename}': {e}")
 
 
 def preprocess(dataset_path, speech_dataset):
@@ -176,14 +142,14 @@ def preprocess(dataset_path, speech_dataset):
             existing_folders = list(existing_folders)
 
             for source_folder in existing_folders:
-                print("Перенесем данные из '%s' в '%s'" % (source_folder, wavs_path))
+                print(f"Перенесем данные из '{source_folder}' в '{wavs_path}'")
                 files = os.listdir(source_folder)
                 for file in files:
                     source_file = os.path.join(source_folder, file)
                     destination_file = os.path.join(wavs_path, file)
                     shutil.move(source_file, destination_file)
 
-                print("Удалим пустую '%s'" % source_folder)
+                print(f"Удалим пустую папку '{source_folder}'")
                 os.rmdir(source_folder)
 
     mels_path = os.path.join(dataset_path, 'mels')
@@ -193,9 +159,8 @@ def preprocess(dataset_path, speech_dataset):
     if not os.path.isdir(mags_path):
         os.mkdir(mags_path)
 
-    '''tqdm - визуальная обертка для более информативного отображения прогресса выполнения программы'''
     for fname in tqdm(speech_dataset.fnames):
-        mel, mag = get_spectrograms(os.path.join(wavs_path, '%s.wav' % fname))
+        mel, mag = get_spectrograms(os.path.join(wavs_path, f'{fname}.wav'))
 
         t = mel.shape[0]
         # Marginal padding for reduction shape sync.
@@ -205,5 +170,5 @@ def preprocess(dataset_path, speech_dataset):
         # Reduction
         mel = mel[::hp.reduction_rate, :]
 
-        np.save(os.path.join(mels_path, '%s.npy' % fname), mel)
-        np.save(os.path.join(mags_path, '%s.npy' % fname), mag)
+        np.save(os.path.join(mels_path, f'{fname}.npy'), mel)
+        np.save(os.path.join(mags_path, f'{fname}.npy'), mag)

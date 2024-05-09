@@ -1,31 +1,17 @@
-#!/usr/bin/env python
-"""Download and preprocess datasets. Supported datasets are:
-  * English female: LJSpeech (https://keithito.com/LJ-Speech-Dataset/)
-  * Mongolian male: MBSpeech (Mongolian Bible)
-"""
-__author__ = 'Erdene-Ochir Tuguldur'
-
 import os
 import sys
-import csv
-import time
 import argparse
 import fnmatch
-import librosa
-import pandas as pd
+import subprocess
 
 from hparams import HParams as hp
-from zipfile import ZipFile
 from audio import preprocess
 from utils import download_file
 from datasets.ru_speech import RUSpeech
 from datasets.lj_speech import LJSpeech
 
-'''Создаем парсер с указанием его описания'''
 parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-'''Помещаем датасеты, один из которых выберем в терминале'''
 parser.add_argument("--dataset", required=True, choices=['ljspeech', 'ruspeech'], help='dataset name')
-'''В args попадает результат разбора аргументов командной строки'''
 args = parser.parse_args()
 
 if args.dataset == 'ljspeech':
@@ -33,24 +19,26 @@ if args.dataset == 'ljspeech':
     datasets_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'datasets')
     dataset_path = os.path.join(datasets_path, 'LJSpeech-1.1')
 
-    if os.path.isdir(dataset_path) and False:
-        print("LJSpeech dataset folder already exists")
+    if os.path.isdir(dataset_path):
+        print("LJSpeech dataset уже существует")
         sys.exit(0)
+
+    dataset_file_path = os.path.join(datasets_path, dataset_file_name)
+
+    if not os.path.isfile(dataset_file_path):
+        url = f"http://data.keithito.com/data/speech/{dataset_file_name}"
+        download_file(url, dataset_file_path)
+        print(f"Скачивание '{dataset_file_name}'...")
     else:
-        dataset_file_path = os.path.join(datasets_path, dataset_file_name)
-        if not os.path.isfile(dataset_file_path):
-            url = "http://data.keithito.com/data/speech/%s" % dataset_file_name
-            download_file(url, dataset_file_path)
-        else:
-            print("'%s' already exists" % dataset_file_name)
+        print(f"'{dataset_file_name}' уже существует")
 
-        print("extracting '%s'..." % dataset_file_name)
-        os.system('cd %s; tar xvjf %s' % (datasets_path, dataset_file_name))
+    print(f"Извлечение архива '{dataset_file_name}'...")
+    subprocess.run(['tar', 'xvjf', os.path.join(datasets_path, dataset_file_name)], check=True)
 
-        # pre process
-        print("pre processing...")
-        lj_speech = LJSpeech([])
-        preprocess(dataset_path, lj_speech)
+    print("Препроцессинг...")
+    lj_speech = LJSpeech([])
+    preprocess(dataset_path, lj_speech)
+
 elif args.dataset == 'ruspeech':
     dataset_name = 'RUSpeechDataset'
     datasets_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'datasets')

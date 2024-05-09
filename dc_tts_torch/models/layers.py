@@ -1,4 +1,3 @@
-__author__ = 'Erdene-Ochir Tuguldur'
 __all__ = ['E', 'D', 'C', 'HighwayBlock', 'GatedConvBlock', 'ResidualBlock']
 
 import torch.nn as nn
