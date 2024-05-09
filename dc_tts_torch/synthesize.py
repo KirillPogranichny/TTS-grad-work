@@ -4,6 +4,7 @@ __author__ = 'Erdene-Ochir Tuguldur'
 
 import os
 import sys
+import re
 import argparse
 from tqdm import *
 
@@ -20,8 +21,18 @@ parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.A
 parser.add_argument("--dataset", required=True, choices=['ljspeech', 'mbspeech'], help='dataset name')
 args = parser.parse_args()
 
+
+def extract_last_file(file_name):
+    match = re.search(r'\d+', file_name)
+    if match:
+        return int(match.group())
+    return 0
+
+
 if args.dataset == 'ljspeech':
     from datasets.lj_speech import vocab, get_test_data
+
+    samples_path = os.path.join('dc_tts_torch/samples', 'en')
 
     SENTENCES = [
         "Far Eastern Federal University is the best place to study maths"
@@ -46,8 +57,11 @@ if args.dataset == 'ljspeech':
         # "The salt breeze came across from the sea.",
         # "The girl at the booth sold fifty bonds."
     ]
+
 else:
     from datasets.ru_speech import vocab, get_test_data
+
+    samples_path = os.path.join('dc_tts_torch/samples', 'ru')
 
     SENTENCES = [
         "Нийслэлийн прокурорын газраас төрийн өндөр албан тушаалтнуудад холбогдох зарим эрүүгийн хэргүүдийг шүүхэд шилжүүлэв.",
@@ -61,6 +75,17 @@ else:
         "Монгол хүн бидний сэтгэлийг сорсон орон. Энэ бол миний төрсөн нутаг. Монголын сайхан орон.",
         "Постройка крейсера затягивалась из-за проектных неувязок, необходимости."
     ]
+
+if not os.path.isdir(samples_path):
+    os.mkdir(samples_path)
+    max_number = 0
+else:
+    samples_path_list = os.listdir(samples_path)
+    if not samples_path_list:
+        max_number = 0
+    else:
+        max_number_file = max(samples_path_list, key=extract_last_file)
+        max_number = extract_last_file(max_number_file)
 
 torch.set_grad_enabled(False)
 
@@ -108,7 +133,8 @@ for i in range(len(SENTENCES)):
     A = A.cpu().detach().numpy()
     Z = Z.cpu().detach().numpy()
 
-    save_to_png('dc_tts_torch/samples/%d-att.png' % (i + 21), A[0, :, :])
-    save_to_png('dc_tts_torch/samples/%d-mel.png' % (i + 21), Y[0, :, :])
-    save_to_png('dc_tts_torch/samples/%d-mag.png' % (i + 21), Z[0, :, :])
-    save_to_wav(Z[0, :, :].T, 'dc_tts_torch/samples/%d-wav.wav' % (i + 21))
+    if args.dataset == 'ljspeech':
+        save_to_png('%s/%d-att.png' % (samples_path, max_number + i + 1), A[0, :, :])
+        save_to_png('%s/%d-mel.png' % (samples_path, max_number + i + 1), Y[0, :, :])
+        save_to_png('%s/%d-mag.png' % (samples_path, max_number + i + 1), Z[0, :, :])
+        save_to_wav(Z[0, :, :].T, '%s/%d-wav.wav' % (samples_path, max_number + i + 1))
