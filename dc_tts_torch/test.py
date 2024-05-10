@@ -1,20 +1,17 @@
-import os
-import re
+import librosa
+import soundfile
+from hparams import HParams as hp
+import csv
 
-files = os.listdir('samples')
 
-# Функция для извлечения числа из названия файла
-def extract_number(file_name):
-    match = re.search(r'\d+', file_name)
-    if match:
-        return int(match.group())
-    return 0
+# def main():
+#     filename = 'samples/en/1-wav.wav'
+#     y, _ = librosa.load(filename)
+#     steps = float(input("Number of semitones to shift audio file: "))
+#     new_y = librosa.effects.pitch_shift(y, sr=hp.sr, n_steps=steps)
+#     new_y = librosa.effects.time_stretch(new_y, rate=0.9)
+#     soundfile.write("samples/en/pitchShifted.wav", new_y, hp.sr)
+#
+#
+# main()
 
-# Находим файл с наибольшим числовым значением в названии
-max_number_file = max(files, key=extract_number)
-
-# Извлекаем число из названия файла
-max_number = extract_number(max_number_file)
-
-print(f"Файл с наибольшим числовым значением: {max_number_file}")
-print(f"Значение числа: {max_number}")

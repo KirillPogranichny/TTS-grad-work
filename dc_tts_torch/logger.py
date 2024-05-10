@@ -1,5 +1,3 @@
-"""Wrapper class for logging into the TensorBoard and comet.ml"""
-__author__ = 'Erdene-Ochir Tuguldur'
 __all__ = ['Logger']
 
 import os
@@ -12,7 +10,7 @@ class Logger(object):
 
     def __init__(self, dataset_name, model_name):
         self.model_name = model_name
-        self.project_name = "%s-%s" % (dataset_name, self.model_name)
+        self.project_name = f"{dataset_name}-{self.model_name}"
         self.logdir = os.path.join(hp.logdir, self.project_name)
         self.writer = SummaryWriter(log_dir=self.logdir)
 

@@ -1,21 +1,18 @@
-#!/usr/bin/env python
-"""Train the Text2Mel network. See: https://arxiv.org/abs/1710.08969"""
-__author__ = 'Erdene-Ochir Tuguldur'
-
+import warnings
 import sys
 import time
 import argparse
-from tqdm import *
-
 import torch
 import torch.nn.functional as F
+from tqdm import *
 
-# project imports
 from models.ssrn import SSRN
 from hparams import HParams as hp
 from logger import Logger
 from utils import get_last_checkpoint_file_name, load_checkpoint, save_checkpoint
 from datasets.data_loader import SSRNDataLoader
+
+warnings.simplefilter(action='ignore', category=FutureWarning)
 
 
 if __name__ == '__main__':

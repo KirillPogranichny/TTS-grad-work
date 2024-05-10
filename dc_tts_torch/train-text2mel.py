@@ -1,19 +1,19 @@
+import warnings
 import sys
 import time
 import argparse
-from tqdm import *
-
 import numpy as np
-
 import torch
 import torch.nn.functional as F
+from tqdm import *
 
-# project imports
 from models.text2mel import Text2Mel
 from hparams import HParams as hp
 from logger import Logger
 from utils import get_last_checkpoint_file_name, load_checkpoint, save_checkpoint
 from datasets.data_loader import Text2MelDataLoader
+
+warnings.simplefilter(action='ignore', category=FutureWarning)
 
 
 if __name__ == '__main__':

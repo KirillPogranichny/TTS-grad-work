@@ -1,6 +1,3 @@
-"""Utility methods."""
-__author__ = 'Erdene-Ochir Tuguldur'
-
 import os
 import sys
 import glob

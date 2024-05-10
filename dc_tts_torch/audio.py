@@ -4,9 +4,9 @@ import librosa
 import scipy.io.wavfile as wavfile
 import numpy as np
 import shutil
-
 from tqdm import tqdm
 from scipy import signal
+
 from hparams import HParams as hp
 from datasets.ru_speech import RUSpeech
 

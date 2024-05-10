@@ -1,7 +1,3 @@
-#!/usr/bin/env python
-"""Synthetize sentences into speech."""
-__author__ = 'Erdene-Ochir Tuguldur'
-
 import os
 import sys
 import re
@@ -36,26 +32,6 @@ if args.dataset == 'ljspeech':
 
     SENTENCES = [
         "Far Eastern Federal University is the best place to study maths"
-        # "The birch canoe slid on the smooth planks.",
-        # "Glue the sheet to the dark blue background.",
-        # "It's easy to tell the depth of a well.",
-        # "These days a chicken leg is a rare dish.",
-        # "Rice is often served in round bowls.",
-        # "The juice of lemons makes fine punch.",
-        # "The box was thrown beside the parked truck.",
-        # "The hogs were fed chopped corn and garbage.",
-        # "Four hours of steady work faced us.",
-        # "Large size in stockings is hard to sell.",
-        # "The boy was there when the sun rose.",
-        # "A rod is used to catch pink salmon.",
-        # "The source of the huge river is the clear spring.",
-        # "Kick the ball straight and follow through.",
-        # "Help the woman get back to her feet.",
-        # "A pot of tea helps to pass the evening.",
-        # "Smoky fires lack flame and heat.",
-        # "The soft cushion broke the man's fall.",
-        # "The salt breeze came across from the sea.",
-        # "The girl at the booth sold fifty bonds."
     ]
 
 else:
@@ -133,8 +109,7 @@ for i in range(len(SENTENCES)):
     A = A.cpu().detach().numpy()
     Z = Z.cpu().detach().numpy()
 
-    if args.dataset == 'ljspeech':
-        save_to_png('%s/%d-att.png' % (samples_path, max_number + i + 1), A[0, :, :])
-        save_to_png('%s/%d-mel.png' % (samples_path, max_number + i + 1), Y[0, :, :])
-        save_to_png('%s/%d-mag.png' % (samples_path, max_number + i + 1), Z[0, :, :])
-        save_to_wav(Z[0, :, :].T, '%s/%d-wav.wav' % (samples_path, max_number + i + 1))
+    save_to_png(f'{samples_path}/%d-att.png' % (max_number + i + 1), A[0, :, :])
+    save_to_png(f'{samples_path}/%d-mel.png' % (max_number + i + 1), Y[0, :, :])
+    save_to_png(f'{samples_path}/%d-mag.png' % (max_number + i + 1), Z[0, :, :])
+    save_to_wav(Z[0, :, :].T, f'{samples_path}/%d-wav.wav' % (max_number + i + 1))

@@ -1,11 +1,9 @@
-"""Data loader for the Mongolian Bible dataset."""
 import os
 import codecs
 import numpy as np
-
 from torch.utils.data import Dataset
 
-vocab = "PE абвгдеёжзийклмноөпрстуүфхцчшъыьэюя-.,!?"  # P: Padding, E: EOS.
+vocab = "PE абвгдеёжзийклмнопрстуфхцчшщъыьэюя-.,?"  # P: Padding, E: EOS.
 char2idx = {char: idx for idx, char in enumerate(vocab)}
 idx2char = {idx: char for idx, char in enumerate(vocab)}
 
@@ -13,24 +11,36 @@ idx2char = {idx: char for idx, char in enumerate(vocab)}
 '''Необходимо провести нормализацию для русского языка'''
 def text_normalize(text):
     text = text.lower()
-    # text = text.replace(",", "'")
-    # text = text.replace("!", "?")
     for c in "-—:":
         text = text.replace(c, "-")
-    for c in "()\"«»“”'":
+    for c in "()\"«»“”';":
         text = text.replace(c, ",")
+    for c in "!":
+        text = text.replace(c, ".")
     return text
+
+
+def _normalize(s):
+    """remove leading '-'"""
+    s = s.strip()
+    if s[0] == '—' or s[0] == '-':
+        s = s[1:].strip()
+    s = s.replace('—', '') if '-' in s else s
+    s = s.replace(':', ',') if ':' in s else s
+    return s
 
 
 def read_metadata(metadata_file):
     fnames, text_lengths, texts = [], [], []
     transcript = os.path.join(metadata_file)
-    lines = codecs.open(transcript, 'r', 'utf-8').readlines()
+    lines = codecs.open(transcript, 'rb', 'utf-8').readlines()
     for line in lines:
         fname, _, text, _ = line.strip().split("|")
-
+        fname = fname.split('/')[-1]
+        fname = fname.rsplit('.wav', 1)[0]
         fnames.append(fname)
 
+        # text = _normalize(text)
         text = text_normalize(text) + "E"  # E: EOS
         text = [char2idx[char] for char in text]
         text_lengths.append(len(text))
@@ -63,79 +73,19 @@ class RUSpeech(Dataset):
 
     def __getitem__(self, index):
         data = {}
-        if 'texts' in self.keys:
-            data['texts'] = self.texts[index]
-        if 'mels' in self.keys:
-            # (39, 80)
-            data['mels'] = np.load(os.path.join(self.path, 'mels', "%s.npy" % self.fnames[index]))
-        if 'mags' in self.keys:
-            # (39, 80)
-            data['mags'] = np.load(os.path.join(self.path, 'mags', "%s.npy" % self.fnames[index]))
-        if 'mel_gates' in self.keys:
-            data['mel_gates'] = np.ones(data['mels'].shape[0], dtype=np.int32)  # TODO: because pre processing!
-        if 'mag_gates' in self.keys:
-            data['mag_gates'] = np.ones(data['mags'].shape[0], dtype=np.int32)  # TODO: because pre processing!
+        available_keys = ['texts', 'mels', 'mags', 'mel_gates', 'mag_gates']
+
+        for key in available_keys:
+            if key in self.keys:
+                if key == 'texts':
+                    data[key] = self.texts[index]
+                elif key == 'mels':
+                    data[key] = np.load(os.path.join(self.path, 'mels', f'{self.fnames[index]}.npy'))
+                elif key == 'mags':
+                    data[key] = np.load(os.path.join(self.path, 'mags', f'{self.fnames[index]}.npy'))
+                elif key == 'mel_gates':
+                    data[key] = np.ones(data['mels'].shape[0], dtype=np.int32)
+                elif key == 'mag_gates':
+                    data[key] = np.ones(data['mags'].shape[0], dtype=np.int32)
+
         return data
-
-#
-# simple method to convert mongolian numbers to text, copied from somewhere
-#
-
-
-'''Необходимо провести нормализацию для русского языка'''
-def number2word(number):
-    digit_len = len(number)
-    digit_name = {1: '', 2: 'мянга', 3: 'сая', 4: 'тэрбум', 5: 'их наяд', 6: 'тунамал'}
-
-    if digit_len == 1:
-        return _last_digit_2_str(number)
-    if digit_len == 2:
-        return _2_digits_2_str(number)
-    if digit_len == 3:
-        return _3_digits_to_str(number)
-    if digit_len < 7:
-        return _3_digits_to_str(number[:-3], False) + ' ' + digit_name[2] + ' ' + _3_digits_to_str(number[-3:])
-
-    digitgroup = [number[0 if i - 3 < 0 else i - 3:i] for i in reversed(range(len(number), 0, -3))]
-    count = len(digitgroup)
-    i = 0
-    result = ''
-    while i < count - 1:
-        result += ' ' + (_3_digits_to_str(digitgroup[i], False) + ' ' + digit_name[count - i])
-        i += 1
-    return result.strip() + ' ' + _3_digits_to_str(digitgroup[-1])
-
-
-def _1_digit_2_str(digit):
-    return {'0': '', '1': 'нэгэн', '2': 'хоёр', '3': 'гурван', '4': 'дөрвөн', '5': 'таван', '6': 'зургаан',
-            '7': 'долоон', '8': 'найман', '9': 'есөн'}[digit]
-
-
-def _last_digit_2_str(digit):
-    return {'0': 'тэг', '1': 'нэг', '2': 'хоёр', '3': 'гурав', '4': 'дөрөв', '5': 'тав', '6': 'зургаа', '7': 'долоо',
-            '8': 'найм', '9': 'ес'}[digit]
-
-
-def _2_digits_2_str(digit, is_fina=True):
-    word2 = {'0': '', '1': 'арван', '2': 'хорин', '3': 'гучин', '4': 'дөчин', '5': 'тавин', '6': 'жаран', '7': 'далан',
-             '8': 'наян', '9': 'ерэн'}
-    word2fina = {'10': 'арав', '20': 'хорь', '30': 'гуч', '40': 'дөч', '50': 'тавь', '60': 'жар', '70': 'дал',
-                 '80': 'ная', '90': 'ер'}
-    if digit[1] == '0':
-        return word2fina[digit] if is_fina else word2[digit[0]]
-    digit1 = _last_digit_2_str(digit[1]) if is_fina else _1_digit_2_str(digit[1])
-    return (word2[digit[0]] + ' ' + digit1).strip()
-
-
-def _3_digits_to_str(digit, is_fina=True):
-    digstr = digit.lstrip('0')
-    if len(digstr) == 0:
-        return ''
-    if len(digstr) == 1:
-        return _1_digit_2_str(digstr)
-    if len(digstr) == 2:
-        return _2_digits_2_str(digstr, is_fina)
-    if digit[-2:] == '00':
-        return _1_digit_2_str(digit[0]) + ' зуу' if is_fina else _1_digit_2_str(digit[0]) + ' зуун'
-    else:
-        return _1_digit_2_str(digit[0]) + ' зуун ' + _2_digits_2_str(digit[-2:], is_fina)

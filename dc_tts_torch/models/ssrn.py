@@ -1,11 +1,3 @@
-"""
-Hideyuki Tachibana, Katsuya Uenoyama, Shunsuke Aihara
-Efficiently Trainable Text-to-Speech System Based on Deep Convolutional Networks with Guided Attention
-https://arxiv.org/abs/1710.08969
-
-SSRN Network.
-"""
-__author__ = 'Erdene-Ochir Tuguldur'
 __all__ = ['SSRN']
 
 import torch.nn as nn
