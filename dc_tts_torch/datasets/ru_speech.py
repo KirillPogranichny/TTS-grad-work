@@ -9,6 +9,8 @@ idx2char = {idx: char for idx, char in enumerate(vocab)}
 
 
 '''Необходимо провести нормализацию для русского языка'''
+
+
 def text_normalize(text):
     text = text.lower()
     for c in "-—:":
@@ -50,7 +52,9 @@ def read_metadata(metadata_file):
 
 
 def get_test_data(sentences, max_n):
-    normalized_sentences = [text_normalize(line).strip() + "E" for line in sentences]  # text normalization, E: EOS
+    normalized_sentences = [
+        text_normalize(line).strip() +
+        "E" for line in sentences]  # text normalization, E: EOS
     texts = np.zeros((len(normalized_sentences), max_n + 1), np.longlong)
     for i, sent in enumerate(normalized_sentences):
         texts[i, :len(sent)] = [char2idx[char] for char in sent]
@@ -60,8 +64,12 @@ def get_test_data(sentences, max_n):
 class RUSpeech(Dataset):
     def __init__(self, keys, dir_name='RUSpeechDataset'):
         self.keys = keys
-        self.path = os.path.join(os.path.dirname(os.path.realpath(__file__)), dir_name)
-        self.fnames, self.text_lengths, self.texts = read_metadata(os.path.join(self.path, 'transcript.txt'))
+        self.path = os.path.join(
+            os.path.dirname(
+                os.path.realpath(__file__)),
+            dir_name)
+        self.fnames, self.text_lengths, self.texts = read_metadata(
+            os.path.join(self.path, 'transcript.txt'))
 
     def slice(self, start, end):
         self.fnames = self.fnames[start:end]
@@ -80,9 +88,15 @@ class RUSpeech(Dataset):
                 if key == 'texts':
                     data[key] = self.texts[index]
                 elif key == 'mels':
-                    data[key] = np.load(os.path.join(self.path, 'mels', f'{self.fnames[index]}.npy'))
+                    data[key] = np.load(
+                        os.path.join(
+                            self.path, 'mels', f'{
+                                self.fnames[index]}.npy'))
                 elif key == 'mags':
-                    data[key] = np.load(os.path.join(self.path, 'mags', f'{self.fnames[index]}.npy'))
+                    data[key] = np.load(
+                        os.path.join(
+                            self.path, 'mags', f'{
+                                self.fnames[index]}.npy'))
                 elif key == 'mel_gates':
                     data[key] = np.ones(data['mels'].shape[0], dtype=np.int32)
                 elif key == 'mag_gates':

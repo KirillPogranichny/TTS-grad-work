@@ -35,7 +35,9 @@ def load_checkpoint(checkpoint_file_name, model, optimizer):
 
 def save_checkpoint(logdir, epoch, global_step, model, optimizer):
     """Saves the training state into the given log dir path."""
-    checkpoint_file_name = os.path.join(logdir, 'step-%03dK.pth' % (global_step // 1000))
+    checkpoint_file_name = os.path.join(
+        logdir, 'step-%03dK.pth' %
+        (global_step // 1000))
     print("saving the checkpoint file '%s'..." % checkpoint_file_name)
     checkpoint = {
         'epoch': epoch + 1,
@@ -55,7 +57,12 @@ def download_file(url, file_path):
     block_size = 1024 * 1024
     wrote = 0
     with open(file_path, 'wb') as f:
-        for data in tqdm(r.iter_content(block_size), total=math.ceil(total_size // block_size), unit='MB'):
+        for data in tqdm(
+                r.iter_content(block_size),
+                total=math.ceil(
+                    total_size //
+                    block_size),
+                unit='MB'):
             wrote = wrote + len(data)
             f.write(data)
 
@@ -66,6 +73,4 @@ def download_file(url, file_path):
 
 def save_to_png(file_name, array):
     """Save the given numpy array as a PNG file."""
-    # from skimage._shared._warnings import expected_warnings
-    # with expected_warnings(['precision']):
     imsave(file_name, img_as_ubyte(array))

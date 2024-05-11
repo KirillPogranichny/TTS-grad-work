@@ -7,27 +7,65 @@ from hparams import HParams as hp
 from .layers import D, C, HighwayBlock, GatedConvBlock, ResidualBlock
 
 
-def Conv(in_channels, out_channels, kernel_size, dilation, nonlinearity='linear'):
-    return C(in_channels, out_channels, kernel_size, dilation, causal=False,
-             weight_init=hp.ssrn_weight_init, normalization=hp.ssrn_normalization, nonlinearity=nonlinearity)
+def Conv(
+        in_channels,
+        out_channels,
+        kernel_size,
+        dilation,
+        nonlinearity='linear'):
+    return C(
+        in_channels,
+        out_channels,
+        kernel_size,
+        dilation,
+        causal=False,
+        weight_init=hp.ssrn_weight_init,
+        normalization=hp.ssrn_normalization,
+        nonlinearity=nonlinearity)
 
 
-def DeConv(in_channels, out_channels, kernel_size, dilation, nonlinearity='linear'):
-    return D(in_channels, out_channels, kernel_size, dilation,
-             weight_init=hp.ssrn_weight_init, normalization=hp.ssrn_normalization, nonlinearity=nonlinearity)
+def DeConv(
+        in_channels,
+        out_channels,
+        kernel_size,
+        dilation,
+        nonlinearity='linear'):
+    return D(
+        in_channels,
+        out_channels,
+        kernel_size,
+        dilation,
+        weight_init=hp.ssrn_weight_init,
+        normalization=hp.ssrn_normalization,
+        nonlinearity=nonlinearity)
 
 
 def BasicBlock(d, k, delta):
     if hp.ssrn_basic_block == 'gated_conv':
-        return GatedConvBlock(d, k, delta, causal=False,
-                              weight_init=hp.ssrn_weight_init, normalization=hp.ssrn_normalization)
+        return GatedConvBlock(
+            d,
+            k,
+            delta,
+            causal=False,
+            weight_init=hp.ssrn_weight_init,
+            normalization=hp.ssrn_normalization)
     elif hp.ssrn_basic_block == 'highway':
-        return HighwayBlock(d, k, delta, causal=False,
-                            weight_init=hp.ssrn_weight_init, normalization=hp.ssrn_normalization)
+        return HighwayBlock(
+            d,
+            k,
+            delta,
+            causal=False,
+            weight_init=hp.ssrn_weight_init,
+            normalization=hp.ssrn_normalization)
     else:
-        return ResidualBlock(d, k, delta, causal=False,
-                             weight_init=hp.ssrn_weight_init, normalization=hp.ssrn_normalization,
-                             widening_factor=1)
+        return ResidualBlock(
+            d,
+            k,
+            delta,
+            causal=False,
+            weight_init=hp.ssrn_weight_init,
+            normalization=hp.ssrn_normalization,
+            widening_factor=1)
 
 
 class SSRN(nn.Module):

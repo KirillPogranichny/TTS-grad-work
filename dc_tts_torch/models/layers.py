@@ -9,17 +9,31 @@ from hparams import HParams as hp
 class LayerNorm(nn.LayerNorm):
     def __init__(self, normalized_shape, eps=1e-5, elementwise_affine=True):
         """Layer Norm."""
-        super(LayerNorm, self).__init__(normalized_shape, eps=eps, elementwise_affine=elementwise_affine)
+        super(
+            LayerNorm,
+            self).__init__(
+            normalized_shape,
+            eps=eps,
+            elementwise_affine=elementwise_affine)
 
     def forward(self, x):
-        x = x.permute(0, 2, 1)  # PyTorch LayerNorm seems to be expect (B, T, C)
+        # PyTorch LayerNorm seems to be expect (B, T, C)
+        x = x.permute(0, 2, 1)
         y = super(LayerNorm, self).forward(x)
         y = y.permute(0, 2, 1)  # reverse
         return y
 
 
 class D(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size, dilation, weight_init='none', normalization='weight', nonlinearity='linear'):
+    def __init__(
+            self,
+            in_channels,
+            out_channels,
+            kernel_size,
+            dilation,
+            weight_init='none',
+            normalization='weight',
+            nonlinearity='linear'):
         """1D Deconvolution."""
         super(D, self).__init__()
         self.deconv = nn.ConvTranspose1d(in_channels, out_channels, kernel_size,
@@ -33,22 +47,40 @@ class D(nn.Module):
 
         self.nonlinearity = nonlinearity
         if weight_init == 'kaiming':
-            nn.init.kaiming_normal_(self.deconv.weight, mode='fan_out', nonlinearity=nonlinearity)
+            nn.init.kaiming_normal_(
+                self.deconv.weight,
+                mode='fan_out',
+                nonlinearity=nonlinearity)
         elif weight_init == 'xavier':
-            nn.init.xavier_uniform_(self.deconv.weight, nn.init.calculate_gain(nonlinearity))
+            nn.init.xavier_uniform_(
+                self.deconv.weight,
+                nn.init.calculate_gain(nonlinearity))
 
     def forward(self, x, output_size=None):
         y = self.deconv(x, output_size=output_size)
         if hasattr(self, 'layer_norm'):
             y = self.layer_norm(y)
-        y = F.dropout(y, p=hp.dropout_rate, training=self.training, inplace=True)
+        y = F.dropout(
+            y,
+            p=hp.dropout_rate,
+            training=self.training,
+            inplace=True)
         if self.nonlinearity == 'relu':
             y = F.relu(y, inplace=True)
         return y
 
 
 class C(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size, dilation, causal=False, weight_init='none', normalization='weight', nonlinearity='linear'):
+    def __init__(
+            self,
+            in_channels,
+            out_channels,
+            kernel_size,
+            dilation,
+            causal=False,
+            weight_init='none',
+            normalization='weight',
+            nonlinearity='linear'):
         """1D convolution.
         The argument 'causal' indicates whether the causal convolution should be used or not.
         """
@@ -80,9 +112,14 @@ class C(nn.Module):
 
         self.nonlinearity = nonlinearity
         if weight_init == 'kaiming':
-            nn.init.kaiming_normal_(self.conv.weight, mode='fan_out', nonlinearity=nonlinearity)
+            nn.init.kaiming_normal_(
+                self.conv.weight,
+                mode='fan_out',
+                nonlinearity=nonlinearity)
         elif weight_init == 'xavier':
-            nn.init.xavier_uniform_(self.conv.weight, nn.init.calculate_gain(nonlinearity))
+            nn.init.xavier_uniform_(
+                self.conv.weight,
+                nn.init.calculate_gain(nonlinearity))
 
     def forward(self, x):
         y = self.conv(x)
@@ -92,7 +129,11 @@ class C(nn.Module):
 
         if hasattr(self, 'layer_norm'):
             y = self.layer_norm(y)
-        y = F.dropout(y, p=hp.dropout_rate, training=self.training, inplace=True)
+        y = F.dropout(
+            y,
+            p=hp.dropout_rate,
+            training=self.training,
+            inplace=True)
         if self.nonlinearity == 'relu':
             y = F.relu(y, inplace=True)
         return y
@@ -122,14 +163,22 @@ class E(nn.Module):
                     В результате, векторы встраивания для слов, которые имеют схожую семантику,
                     будут близко расположены в пространстве векторов'''
         super(E, self).__init__()
-        self.embedding = nn.Embedding(num_embeddings, embedding_dim, padding_idx=0)
+        self.embedding = nn.Embedding(
+            num_embeddings, embedding_dim, padding_idx=0)
 
     def forward(self, x):
         return self.embedding(x)
 
 
 class HighwayBlock(nn.Module):
-    def __init__(self, d, k, delta, causal=False, weight_init='none', normalization='weight'):
+    def __init__(
+            self,
+            d,
+            k,
+            delta,
+            causal=False,
+            weight_init='none',
+            normalization='weight'):
         """Highway Network like layer: https://arxiv.org/abs/1505.00387
         The input and output shapes remain same.
         Args:
@@ -140,19 +189,26 @@ class HighwayBlock(nn.Module):
         """
         super(HighwayBlock, self).__init__()
         self.d = d
-        self.C = C(in_channels=d, out_channels=2 * d, kernel_size=k, dilation=delta, causal=causal, weight_init=weight_init, normalization=normalization)
+        self.C = C(
+            in_channels=d,
+            out_channels=2 * d,
+            kernel_size=k,
+            dilation=delta,
+            causal=causal,
+            weight_init=weight_init,
+            normalization=normalization)
 
     def forward(self, x):
         L = self.C(x)
         H1 = L[:, :self.d, :]
         H2 = L[:, self.d:, :]
         '''Сигмоида является функцией активации, которая преобразует входные значения в диапазон от 0 до 1,
-           что делает ее полезной для задач бинарной классификации, 
+           что делает ее полезной для задач бинарной классификации,
            где выходные значения интерпретируются как вероятности принадлежности к определенному классу.
               Формула сигмоиды выглядит следующим образом:
-              
+
               [text{Sigmoid}(H1) = frac{1}{1 + exp(-H1)}]
-              
+
            Это означает, что для каждого элемента входного тензора H1, функция вычисляет значение сигмоиды,
            используя формулу выше. Результатом является тензор того же размера, что и входной,
            но с примененной функцией сигмоиды к каждому элементу'''
@@ -161,7 +217,14 @@ class HighwayBlock(nn.Module):
 
 
 class GatedConvBlock(nn.Module):
-    def __init__(self, d, k, delta, causal=False, weight_init='none', normalization='weight'):
+    def __init__(
+            self,
+            d,
+            k,
+            delta,
+            causal=False,
+            weight_init='none',
+            normalization='weight'):
         """Gated convolutional layer: https://arxiv.org/abs/1612.08083
         The input and output shapes remain same.
         Args:
@@ -171,8 +234,14 @@ class GatedConvBlock(nn.Module):
             causal: causal convolution or not
         """
         super(GatedConvBlock, self).__init__()
-        self.C = C(in_channels=d, out_channels=2 * d, kernel_size=k, dilation=delta, causal=causal,
-                   weight_init=weight_init, normalization=normalization)
+        self.C = C(
+            in_channels=d,
+            out_channels=2 * d,
+            kernel_size=k,
+            dilation=delta,
+            causal=causal,
+            weight_init=weight_init,
+            normalization=normalization)
         '''GLU — это вариация линейного слоя, которая разделяет входные данные на две части:
            одну, которая проходит через линейное преобразование,
            и другую, которая проходит через линейное преобразование и затем применяется функция активации,
@@ -196,8 +265,15 @@ class GatedConvBlock(nn.Module):
 
 
 class ResidualBlock(nn.Module):
-    def __init__(self, d, k, delta, causal=False, weight_init='none', normalization='weight',
-                 widening_factor=2):
+    def __init__(
+            self,
+            d,
+            k,
+            delta,
+            causal=False,
+            weight_init='none',
+            normalization='weight',
+            widening_factor=2):
         """Residual block: https://arxiv.org/abs/1512.03385
         The input and output shapes remain same.
         Args:
@@ -207,10 +283,24 @@ class ResidualBlock(nn.Module):
             causal: causal convolution or not
         """
         super(ResidualBlock, self).__init__()
-        self.C1 = C(in_channels=d, out_channels=widening_factor * d, kernel_size=k, dilation=delta, causal=causal,
-                    weight_init=weight_init, normalization=normalization, nonlinearity='relu')
-        self.C2 = C(in_channels=widening_factor * d, out_channels=d, kernel_size=k, dilation=delta, causal=causal,
-                    weight_init=weight_init, normalization=normalization, nonlinearity='relu')
+        self.C1 = C(
+            in_channels=d,
+            out_channels=widening_factor * d,
+            kernel_size=k,
+            dilation=delta,
+            causal=causal,
+            weight_init=weight_init,
+            normalization=normalization,
+            nonlinearity='relu')
+        self.C2 = C(
+            in_channels=widening_factor * d,
+            out_channels=d,
+            kernel_size=k,
+            dilation=delta,
+            causal=causal,
+            weight_init=weight_init,
+            normalization=normalization,
+            nonlinearity='relu')
 
     def forward(self, x):
         return self.C2(self.C1(x)) + x

@@ -1,13 +1,17 @@
 class HParams:
     """Hyper parameters"""
 
-    disable_progress_bar = False  # set True if you don't want the progress bar in the console
+    # set True if you don't want the progress bar in the console
+    disable_progress_bar = False
 
     logdir = "logdir"  # log dir where the checkpoints and tensorboard files are saved
 
-    # audio.py options, these values are from https://github.com/Kyubyong/dc_tts/blob/master/hyperparams.py
-    reduction_rate = 4  # melspectrogram reduction rate, don't change because SSRN is using this rate
-    n_fft = 2048 # fft points (samples)
+    # audio.py options, these values are from
+    # https://github.com/Kyubyong/dc_tts/blob/master/hyperparams.py
+    # melspectrogram reduction rate, don't change because SSRN is using this
+    # rate
+    reduction_rate = 4
+    n_fft = 2048  # fft points (samples)
     n_mels = 80  # Number of Mel banks to generate
     power = 1.5  # Exponent for amplifying the predicted magnitude
     n_iter = 50  # Number of inversion iterations
@@ -24,7 +28,7 @@ class HParams:
 
     e = 128  # embedding dimension
     d = 256  # Text2Mel hidden unit dimension
-    c = 512+128  # SSRN hidden unit dimension
+    c = 512 + 128  # SSRN hidden unit dimension
 
     dropout_rate = 0.05  # dropout
 

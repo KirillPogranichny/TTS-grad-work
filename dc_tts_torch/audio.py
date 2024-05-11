@@ -49,7 +49,11 @@ def griffin_lim(spectrogram):
     X_best = copy.deepcopy(spectrogram)
     for i in range(hp.n_iter):
         X_t = invert_spectrogram(X_best)
-        est = librosa.stft(X_t, n_fft=hp.n_fft, hop_length=hp.hop_length, win_length=hp.win_length)
+        est = librosa.stft(
+            X_t,
+            n_fft=hp.n_fft,
+            hop_length=hp.hop_length,
+            win_length=hp.win_length)
         phase = est / np.maximum(1e-8, np.abs(est))
         X_best = spectrogram * phase
     X_t = invert_spectrogram(X_best)
@@ -63,7 +67,11 @@ def invert_spectrogram(spectrogram):
     Args:
       spectrogram: [1+n_fft//2, t]
     '''
-    return librosa.istft(spectrogram, hop_length=hp.hop_length, win_length=hp.win_length, window="hann")
+    return librosa.istft(
+        spectrogram,
+        hop_length=hp.hop_length,
+        win_length=hp.win_length,
+        window="hann")
 
 
 def get_spectrograms(fpath):
@@ -97,7 +105,10 @@ def get_spectrograms(fpath):
     mag = np.abs(linear)  # (1+n_fft//2, T)
 
     # Мел-спектрограмма
-    mel_basis = librosa.filters.mel(sr=hp.sr, n_fft=hp.n_fft, n_mels=hp.n_mels)  # (n_mels, 1+n_fft//2)
+    mel_basis = librosa.filters.mel(
+        sr=hp.sr,
+        n_fft=hp.n_fft,
+        n_mels=hp.n_mels)  # (n_mels, 1+n_fft//2)
     mel = np.dot(mel_basis, mag)  # (n_mels, t)
 
     # Преобразование в децибелы
@@ -133,11 +144,14 @@ def preprocess(dataset_path, speech_dataset):
     if isinstance(speech_dataset, RUSpeech):
         if not os.path.isdir(wavs_path):
             os.mkdir(wavs_path)
-        source_folders = [os.path.join(dataset_path, 'early_short_stories'),
-                          os.path.join(dataset_path, 'icemarch'),
-                          os.path.join(dataset_path, 'shortstories_childrenadults')]
+        source_folders = [
+            os.path.join(
+                dataset_path, 'early_short_stories'), os.path.join(
+                dataset_path, 'icemarch'), os.path.join(
+                dataset_path, 'shortstories_childrenadults')]
 
-        if any(os.path.isdir(source_folder) for source_folder in source_folders):
+        if any(os.path.isdir(source_folder)
+               for source_folder in source_folders):
             existing_folders = filter(os.path.isdir, source_folders)
             existing_folders = list(existing_folders)
 
@@ -164,7 +178,8 @@ def preprocess(dataset_path, speech_dataset):
 
         t = mel.shape[0]
         # Marginal padding for reduction shape sync.
-        num_paddings = hp.reduction_rate - (t % hp.reduction_rate) if t % hp.reduction_rate != 0 else 0
+        num_paddings = hp.reduction_rate - \
+            (t % hp.reduction_rate) if t % hp.reduction_rate != 0 else 0
         mel = np.pad(mel, [[0, num_paddings], [0, 0]], mode="constant")
         mag = np.pad(mag, [[0, num_paddings], [0, 0]], mode="constant")
         # Reduction

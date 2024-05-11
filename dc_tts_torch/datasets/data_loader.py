@@ -8,7 +8,12 @@ __all__ = ['Text2MelDataLoader', 'SSRNDataLoader']
 
 
 class Text2MelDataLoader(DataLoader):
-    def __init__(self, text2mel_dataset, batch_size, mode='train', num_workers=8):
+    def __init__(
+            self,
+            text2mel_dataset,
+            batch_size,
+            mode='train',
+            num_workers=8):
         if mode == 'train':
             text2mel_dataset.slice(0, -batch_size)
         elif mode == 'valid':
@@ -26,13 +31,15 @@ class SSRNDataLoader(DataLoader):
     def __init__(self, ssrn_dataset, batch_size, mode='train', num_workers=8):
         if mode == 'train':
             ssrn_dataset.slice(0, -batch_size)
-            super().__init__(ssrn_dataset,
-                             batch_size=batch_size,
-                             num_workers=num_workers,
-                             collate_fn=collate_fn,
-                             sampler=PartiallyRandomizedSimilarTimeLengthSampler(lengths=ssrn_dataset.text_lengths,
-                                                                                 data_source=None,
-                                                                                 batch_size=batch_size))
+            super().__init__(
+                ssrn_dataset,
+                batch_size=batch_size,
+                num_workers=num_workers,
+                collate_fn=collate_fn,
+                sampler=PartiallyRandomizedSimilarTimeLengthSampler(
+                    lengths=ssrn_dataset.text_lengths,
+                    data_source=None,
+                    batch_size=batch_size))
         elif mode == 'valid':
             ssrn_dataset.slice(len(ssrn_dataset) - batch_size, -1)
             super().__init__(ssrn_dataset,
@@ -60,11 +67,12 @@ def collate_fn(batch):
             array = row[key]
             dim = len(array.shape)
             assert dim == 1 or dim == 2
-            # TODO: because of pre processing, later we want to have (n_mels, T)
             if dim == 1:
-                padded_array = np.pad(array, (0, max_lengths[key] - array.shape[0]), mode='constant')
+                padded_array = np.pad(
+                    array, (0, max_lengths[key] - array.shape[0]), mode='constant')
             else:
-                padded_array = np.pad(array, ((0, max_lengths[key] - array.shape[0]), (0, 0)), mode='constant')
+                padded_array = np.pad(
+                    array, ((0, max_lengths[key] - array.shape[0]), (0, 0)), mode='constant')
             collated_batch[key].append(padded_array)
 
     # use the default_collate to convert to tensors
@@ -74,16 +82,22 @@ def collate_fn(batch):
 
 
 class PartiallyRandomizedSimilarTimeLengthSampler(Sampler):
-    """Copied from: https://github.com/r9y9/deepvoice3_pytorch/blob/master/train.py.
-    Partially randomized sampler
+    """Partially randomized sampler
     1. Sort by lengths
     2. Pick a small patch and randomize it
     3. Permutate mini-batches
     """
 
-    def __init__(self, lengths, data_source, batch_size=16, batch_group_size=None, permutate=True):
+    def __init__(
+            self,
+            lengths,
+            data_source,
+            batch_size=16,
+            batch_group_size=None,
+            permutate=True):
         super().__init__(data_source)
-        self.lengths, self.sorted_indices = torch.sort(torch.LongTensor(lengths))
+        self.lengths, self.sorted_indices = torch.sort(
+            torch.LongTensor(lengths))
         self.batch_size = batch_size
         if batch_group_size is None:
             batch_group_size = min(batch_size * 32, len(self.lengths))
@@ -107,7 +121,8 @@ class PartiallyRandomizedSimilarTimeLengthSampler(Sampler):
         if self.permutate:
             perm = np.arange(len(indices[:e]) // self.batch_size)
             random.shuffle(perm)
-            indices[:e] = indices[:e].view(-1, self.batch_size)[perm, :].view(-1)
+            indices[:e] = indices[:e].view(-1,
+                                           self.batch_size)[perm, :].view(-1)
 
         # Handle last elements
         s += batch_group_size

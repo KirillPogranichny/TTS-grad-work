@@ -2,7 +2,7 @@ import os
 import sys
 import re
 import argparse
-from tqdm import *
+from tqdm import tqdm
 
 import numpy as np
 import torch
@@ -13,8 +13,16 @@ from hparams import HParams as hp
 from audio import save_to_wav
 from utils import get_last_checkpoint_file_name, load_checkpoint, save_to_png
 
-parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument("--dataset", required=True, choices=['ljspeech', 'mbspeech'], help='dataset name')
+parser = argparse.ArgumentParser(
+    description=__doc__,
+    formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+parser.add_argument(
+    "--dataset",
+    required=True,
+    choices=[
+        'ljspeech',
+        'mbspeech'],
+    help='dataset name')
 args = parser.parse_args()
 
 
@@ -49,8 +57,7 @@ else:
         "Ер нь бол хараа тэглэх мэс заслыг гоо сайхны мэс засалтай адилхан гэж зүйрлэж болно.",
         "Хашлага даван, зүлэг гэмтээсэн жолоочийн эрхийг хоёр жилээр хасжээ.",
         "Монгол хүн бидний сэтгэлийг сорсон орон. Энэ бол миний төрсөн нутаг. Монголын сайхан орон.",
-        "Постройка крейсера затягивалась из-за проектных неувязок, необходимости."
-    ]
+        "Постройка крейсера затягивалась из-за проектных неувязок, необходимости."]
 
 if not os.path.isdir(samples_path):
     os.mkdir(samples_path)
@@ -66,7 +73,8 @@ else:
 torch.set_grad_enabled(False)
 
 text2mel = Text2Mel(vocab).eval()
-last_checkpoint_file_name = get_last_checkpoint_file_name(os.path.join(hp.logdir, '%s-text2mel' % args.dataset))
+last_checkpoint_file_name = get_last_checkpoint_file_name(
+    os.path.join(hp.logdir, '%s-text2mel' % args.dataset))
 # last_checkpoint_file_name = 'logdir/%s-text2mel/step-020K.pth' % args.dataset
 if last_checkpoint_file_name:
     print("loading text2mel checkpoint '%s'..." % last_checkpoint_file_name)
@@ -76,7 +84,8 @@ else:
     sys.exit(1)
 
 ssrn = SSRN().eval()
-last_checkpoint_file_name = get_last_checkpoint_file_name(os.path.join(hp.logdir, '%s-ssrn' % args.dataset))
+last_checkpoint_file_name = get_last_checkpoint_file_name(
+    os.path.join(hp.logdir, '%s-ssrn' % args.dataset))
 # last_checkpoint_file_name = 'logdir/%s-ssrn/step-005K.pth' % args.dataset
 if last_checkpoint_file_name:
     print("loading ssrn checkpoint '%s'..." % last_checkpoint_file_name)
@@ -109,7 +118,11 @@ for i in range(len(SENTENCES)):
     A = A.cpu().detach().numpy()
     Z = Z.cpu().detach().numpy()
 
-    save_to_png(f'{samples_path}/%d-att.png' % (max_number + i + 1), A[0, :, :])
-    save_to_png(f'{samples_path}/%d-mel.png' % (max_number + i + 1), Y[0, :, :])
-    save_to_png(f'{samples_path}/%d-mag.png' % (max_number + i + 1), Z[0, :, :])
-    save_to_wav(Z[0, :, :].T, f'{samples_path}/%d-wav.wav' % (max_number + i + 1))
+    save_to_png(f'{samples_path}/%d-att.png' %
+                (max_number + i + 1), A[0, :, :])
+    save_to_png(f'{samples_path}/%d-mel.png' %
+                (max_number + i + 1), Y[0, :, :])
+    save_to_png(f'{samples_path}/%d-mag.png' %
+                (max_number + i + 1), Z[0, :, :])
+    save_to_wav(Z[0, :, :].T, f'{
+                samples_path}/%d-wav.wav' % (max_number + i + 1))

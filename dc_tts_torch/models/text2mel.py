@@ -9,29 +9,68 @@ from hparams import HParams as hp
 from .layers import E, C, HighwayBlock, GatedConvBlock, ResidualBlock
 
 
-def Conv(in_channels, out_channels, kernel_size, dilation, causal=False, nonlinearity='linear'):
+def Conv(
+        in_channels,
+        out_channels,
+        kernel_size,
+        dilation,
+        causal=False,
+        nonlinearity='linear'):
     '''Convolutional layer with optional causal and nonlinearity.'''
-    return C(in_channels, out_channels, kernel_size, dilation, causal=causal,
-             weight_init=hp.text2mel_weight_init, normalization=hp.text2mel_normalization, nonlinearity=nonlinearity)
+    return C(
+        in_channels,
+        out_channels,
+        kernel_size,
+        dilation,
+        causal=causal,
+        weight_init=hp.text2mel_weight_init,
+        normalization=hp.text2mel_normalization,
+        nonlinearity=nonlinearity)
 
 
 def BasicBlock(d, k, delta, causal=False):
     '''Basic block of the model, can be gated conv, highway or residual.'''
     if hp.text2mel_basic_block == 'gated_conv':
-        return GatedConvBlock(d, k, delta, causal=causal,
-                              weight_init=hp.text2mel_weight_init, normalization=hp.text2mel_normalization)
+        return GatedConvBlock(
+            d,
+            k,
+            delta,
+            causal=causal,
+            weight_init=hp.text2mel_weight_init,
+            normalization=hp.text2mel_normalization)
     elif hp.text2mel_basic_block == 'highway':
-        return HighwayBlock(d, k, delta, causal=causal,
-                            weight_init=hp.text2mel_weight_init, normalization=hp.text2mel_normalization)
+        return HighwayBlock(
+            d,
+            k,
+            delta,
+            causal=causal,
+            weight_init=hp.text2mel_weight_init,
+            normalization=hp.text2mel_normalization)
     else:
-        return ResidualBlock(d, k, delta, causal=causal,
-                             weight_init=hp.text2mel_weight_init, normalization=hp.text2mel_normalization,
-                             widening_factor=2)
+        return ResidualBlock(
+            d,
+            k,
+            delta,
+            causal=causal,
+            weight_init=hp.text2mel_weight_init,
+            normalization=hp.text2mel_normalization,
+            widening_factor=2)
 
 
-def CausalConv(in_channels, out_channels, kernel_size, dilation, nonlinearity='linear'):
+def CausalConv(
+        in_channels,
+        out_channels,
+        kernel_size,
+        dilation,
+        nonlinearity='linear'):
     '''Causal convolutional layer.'''
-    return Conv(in_channels, out_channels, kernel_size, dilation, causal=True, nonlinearity=nonlinearity)
+    return Conv(
+        in_channels,
+        out_channels,
+        kernel_size,
+        dilation,
+        causal=True,
+        nonlinearity=nonlinearity)
 
 
 def CausalBasicBlock(d, k, delta):
@@ -62,7 +101,7 @@ class TextEnc(nn.Module):
            1. Инициализация:
                     Передаем список слоев в качестве аргументов. Эти слои будут применяться последовательно.
            2. Применение:
-                    Данные проходят через каждый слой по очереди. 
+                    Данные проходят через каждый слой по очереди.
                     Выход одного слоя становится входом для следующего слоя.
                     Это позволяет создавать сложные архитектуры нейронных сетей с минимальным количеством кода.'''
         self.layers = nn.Sequential(
@@ -102,15 +141,20 @@ class AudioEnc(nn.Module):
         """
         super(AudioEnc, self).__init__()
         self.layers = nn.Sequential(
-            CausalConv(f, d, 1, 1, nonlinearity='relu'),
-            CausalConv(d, d, 1, 1, nonlinearity='relu'),
-            CausalConv(d, d, 1, 1),
-
-            CausalBasicBlock(d, 3, 1), CausalBasicBlock(d, 3, 3), CausalBasicBlock(d, 3, 9), CausalBasicBlock(d, 3, 27),
-            CausalBasicBlock(d, 3, 1), CausalBasicBlock(d, 3, 3), CausalBasicBlock(d, 3, 9), CausalBasicBlock(d, 3, 27),
-
-            CausalBasicBlock(d, 3, 3), CausalBasicBlock(d, 3, 3),
-        )
+            CausalConv(
+                f, d, 1, 1, nonlinearity='relu'), CausalConv(
+                d, d, 1, 1, nonlinearity='relu'), CausalConv(
+                d, d, 1, 1), CausalBasicBlock(
+                    d, 3, 1), CausalBasicBlock(
+                        d, 3, 3), CausalBasicBlock(
+                            d, 3, 9), CausalBasicBlock(
+                                d, 3, 27), CausalBasicBlock(
+                                    d, 3, 1), CausalBasicBlock(
+                                        d, 3, 3), CausalBasicBlock(
+                                            d, 3, 9), CausalBasicBlock(
+                                                d, 3, 27), CausalBasicBlock(
+                                                    d, 3, 3), CausalBasicBlock(
+                                                        d, 3, 3), )
 
     def forward(self, x):
         return self.layers(x)
@@ -131,7 +175,11 @@ class AudioDec(nn.Module):
         self.layers = nn.Sequential(
             CausalConv(2 * d, d, 1, 1),
 
-            CausalBasicBlock(d, 3, 1), CausalBasicBlock(d, 3, 3), CausalBasicBlock(d, 3, 9), CausalBasicBlock(d, 3, 27),
+            CausalBasicBlock(
+                d, 3, 1), CausalBasicBlock(
+                d, 3, 3), CausalBasicBlock(
+                d, 3, 9), CausalBasicBlock(
+                d, 3, 27),
 
             CausalBasicBlock(d, 3, 1), CausalBasicBlock(d, 3, 1),
 
