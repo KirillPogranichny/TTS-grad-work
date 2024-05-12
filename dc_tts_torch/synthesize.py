@@ -6,6 +6,7 @@ from tqdm import tqdm
 
 import numpy as np
 import torch
+import asyncio
 
 from models.text2mel import Text2Mel
 from models.ssrn import SSRN
@@ -21,8 +22,13 @@ parser.add_argument(
     required=True,
     choices=[
         'ljspeech',
-        'mbspeech'],
+        'ruspeech'],
     help='dataset name')
+# parser.add_argument(
+#     "text",
+#     type=str,
+#     required=True,
+#     help="Text to synthesize")
 args = parser.parse_args()
 
 
@@ -33,31 +39,41 @@ def extract_last_file(file_name):
     return 0
 
 
+async def get_input():
+    return input("Введите предложение для синтеза речи (введите 'q' для выхода): ")
+
+
+async def enter_sentences():
+    SENTENCES = []
+    while True:
+        sentence = await get_input()
+        if sentence.lower() == 'q':
+            break
+        SENTENCES.append(sentence)
+    return SENTENCES
+
+
+SENTENCES = asyncio.run(enter_sentences())
+
+# SENTENCES = []
+# while True:
+#     sentence = input("Введите предложение для синтеза речи (введите 'q' для выхода): ")
+#     if sentence.lower() == 'q':
+#         break
+#     SENTENCES.append(sentence)
+
+
+# SENTENCES = [args.text]
+
 if args.dataset == 'ljspeech':
     from datasets.lj_speech import vocab, get_test_data
 
     samples_path = os.path.join('dc_tts_torch/samples', 'en')
 
-    SENTENCES = [
-        "Far Eastern Federal University is the best place to study maths"
-    ]
-
 else:
     from datasets.ru_speech import vocab, get_test_data
 
     samples_path = os.path.join('dc_tts_torch/samples', 'ru')
-
-    SENTENCES = [
-        "Нийслэлийн прокурорын газраас төрийн өндөр албан тушаалтнуудад холбогдох зарим эрүүгийн хэргүүдийг шүүхэд шилжүүлэв.",
-        "Мөнх тэнгэрийн хүчин дор Монгол Улс цэцэглэн хөгжих болтугай.",
-        "Унасан хүлгээ түрүү магнай, аман хүзүүнд уралдуулж, айрагдуулсан унаач хүүхдүүдэд бэлэг гардууллаа.",
-        "Албан ёсоор хэлэхэд “Монгол Улсын хэрэг эрхлэх газрын гэгээнтэн” гэж нэрлээд байгаа зүйл огт байхгүй.",
-        "Сайн чанарын бохирын хоолой зарна.",
-        "Хараа тэглэх мэс заслын дараа хараа дахин муудах магадлал бага.",
-        "Ер нь бол хараа тэглэх мэс заслыг гоо сайхны мэс засалтай адилхан гэж зүйрлэж болно.",
-        "Хашлага даван, зүлэг гэмтээсэн жолоочийн эрхийг хоёр жилээр хасжээ.",
-        "Монгол хүн бидний сэтгэлийг сорсон орон. Энэ бол миний төрсөн нутаг. Монголын сайхан орон.",
-        "Постройка крейсера затягивалась из-за проектных неувязок, необходимости."]
 
 if not os.path.isdir(samples_path):
     os.mkdir(samples_path)
@@ -75,7 +91,6 @@ torch.set_grad_enabled(False)
 text2mel = Text2Mel(vocab).eval()
 last_checkpoint_file_name = get_last_checkpoint_file_name(
     os.path.join(hp.logdir, '%s-text2mel' % args.dataset))
-# last_checkpoint_file_name = 'logdir/%s-text2mel/step-020K.pth' % args.dataset
 if last_checkpoint_file_name:
     print("loading text2mel checkpoint '%s'..." % last_checkpoint_file_name)
     load_checkpoint(last_checkpoint_file_name, text2mel, None)
@@ -86,7 +101,6 @@ else:
 ssrn = SSRN().eval()
 last_checkpoint_file_name = get_last_checkpoint_file_name(
     os.path.join(hp.logdir, '%s-ssrn' % args.dataset))
-# last_checkpoint_file_name = 'logdir/%s-ssrn/step-005K.pth' % args.dataset
 if last_checkpoint_file_name:
     print("loading ssrn checkpoint '%s'..." % last_checkpoint_file_name)
     load_checkpoint(last_checkpoint_file_name, ssrn, None)
@@ -94,7 +108,6 @@ else:
     print("ssrn not exits")
     sys.exit(1)
 
-# synthetize by one by one because there is a batch processing bug!
 for i in range(len(SENTENCES)):
     sentences = [SENTENCES[i]]
 
