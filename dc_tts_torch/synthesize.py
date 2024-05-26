@@ -40,14 +40,15 @@ def extract_last_file(file_name):
 
 
 async def get_input():
-    return input("Введите предложение для синтеза речи (введите 'q' для выхода): ")
+    return input("Введите предложение для синтеза речи (введите 'q' после текста для выхода): ")
 
 
 async def enter_sentences():
     SENTENCES = []
     while True:
         sentence = await get_input()
-        if sentence.lower() == 'q':
+        if sentence.endswith(' q'):
+            SENTENCES.append(sentence[:-2])
             break
         SENTENCES.append(sentence)
     return SENTENCES
