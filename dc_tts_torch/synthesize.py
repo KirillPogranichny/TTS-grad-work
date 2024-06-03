@@ -1,3 +1,4 @@
+import socket
 import os
 import sys
 import re
@@ -18,17 +19,19 @@ parser = argparse.ArgumentParser(
     description=__doc__,
     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument(
+    '-d',
     "--dataset",
     required=True,
     choices=[
         'ljspeech',
         'ruspeech'],
     help='dataset name')
-# parser.add_argument(
-#     "text",
-#     type=str,
-#     required=True,
-#     help="Text to synthesize")
+parser.add_argument(
+    '-t',
+    "--text",
+    type=str,
+    required=False,
+    help="Text to synthesize")
 args = parser.parse_args()
 
 
@@ -54,7 +57,10 @@ async def enter_sentences():
     return SENTENCES
 
 
-SENTENCES = asyncio.run(enter_sentences())
+if args.text:
+    SENTENCES = [args.text]
+else:
+    SENTENCES = asyncio.run(enter_sentences())
 
 # SENTENCES = []
 # while True:
@@ -63,8 +69,6 @@ SENTENCES = asyncio.run(enter_sentences())
 #         break
 #     SENTENCES.append(sentence)
 
-
-# SENTENCES = [args.text]
 
 if args.dataset == 'ljspeech':
     from datasets.lj_speech import vocab, get_test_data
@@ -138,5 +142,6 @@ for i in range(len(SENTENCES)):
                 (max_number + i + 1), Y[0, :, :])
     save_to_png(f'{samples_path}/%d-mag.png' %
                 (max_number + i + 1), Z[0, :, :])
-    save_to_wav(Z[0, :, :].T, f'{
-                samples_path}/%d-wav.wav' % (max_number + i + 1))
+    save_to_wav(Z[0, :, :].T,
+                f'{samples_path}/%d-wav.wav' %
+                (max_number + i + 1))

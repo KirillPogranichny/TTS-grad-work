@@ -9,11 +9,6 @@ import config
 bot = Bot(token=config.BOT_TOKEN, parse_mode=ParseMode.HTML, disable_web_page_preview=True)
 
 
-async def send_message_to_script(process, message):
-    process.stdin.write(message.encode('utf-8') + b'\n')
-    process.stdin.flush()
-
-
 async def send_audiofile(chat_id: int, path: str):
     files = os.listdir(path)
     wav_files = [f for f in files if f.endswith('.wav')]

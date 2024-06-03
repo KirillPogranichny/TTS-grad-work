@@ -1,21 +1,20 @@
-import socket
 import os
 import subprocess
 import sys
 import asyncio
 
-from aiogram import Router, types, Bot
+from aiogram import Router, Bot
 from aiogram.enums import ParseMode
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
-from aiogram.types import Message
-# from aiogram.methods.send_chat_action import SendChatAction
+from aiogram.types import Message, CallbackQuery
+from threading import Thread
 
 import kb
 import text
 import config
 from states import Form
-from utils import send_message_to_script
+from utils import send_audiofile
 
 bot = Bot(token=config.BOT_TOKEN, parse_mode=ParseMode.HTML, disable_web_page_preview=True)
 router = Router()
@@ -31,97 +30,62 @@ async def start_handler(message: Message):
 
 # Обработчик выбора языка
 @router.callback_query(lambda c: c.data in ["generate_en", "generate_ru"])
-async def choose_lang_handler(callback: types.CallbackQuery, state: FSMContext) -> None:
-    global process
+async def choose_lang_handler(callback: CallbackQuery, state: FSMContext) -> None:
     await bot.answer_callback_query(callback.id)
     await state.set_state(Form.enter_text)
-    os.chdir(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
     if callback.data == "generate_en":
-        await state.update_data(language='en')
-        # await callback.message.answer(text.en_lang) # Вынести в следующую итерацию
-        try:
-            process = subprocess.Popen(
-                [sys.executable, "dc_tts_torch/synthesize.py", "--dataset=ljspeech"],
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE
-            )
-            # data['text'] = message.text
-            # subprocess.run([sys.executable, "dc_tts_torch/synthesize.py", "--dataset=ljspeech"], check=True)
-            # await send_message_to_script(sock)
-            # await utils.send_audiofile(message.chat.id, 'dc_tts_torch/samples/en')
-        except subprocess.CalledProcessError as e:
-            print(f"Произошла ошибка: {e.output}")
+        language = 'en'
+        lang = text.en_lang
     else:
-        await state.update_data(language='ru')
-        try:
-            process = subprocess.Popen(
-                [sys.executable, "dc_tts_torch/synthesize.py", "--dataset=ljspeech"],
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE
-            )
-        # await callback.message.answer(text.ru_lang) # Вынести в следующую итерацию
-        except subprocess.CalledProcessError as e:
-            print(f"Произошла ошибка: {e.output}")
+        language = 'ru'
+        lang = text.ru_lang
+    await state.update_data(language=language)
+    await callback.message.answer(lang)
 
 
-@router.message()
-async def post_handler(message: Message, state: FSMContext) -> None:
-    global process
+def run_subprocess(command):
+    subprocess.run(command, check=True)
+
+
+async def send_typing_action(chat_id):
+    while True:
+        await bot.send_chat_action(chat_id, action="typing")
+        await asyncio.sleep(1)
+
+
+@router.message(Form.enter_text)
+async def text_handler(message: Message, state: FSMContext) -> None:
+    user_data = await state.get_data()
+    language = user_data['language']
     user_text = message.text
-    await send_message_to_script(process, user_text)
-    await state.finish()
 
-    # data = await state.get_data()
-    # if data['language'] == "en":
-    #     try:
-    #         data['text'] = message.text
-    #
-    #         await utils.send_audiofile(message.chat.id, 'dc_tts_torch/samples/en')
-    #     except subprocess.CalledProcessError as e:
-    #         print(f"Произошла ошибка: {e.output}")
-    # elif data['language'] == "ru":
-    #     try:
-    #         subprocess.run([sys.executable, "dc_tts_torch/synthesize.py", "--dataset=ruspeech"], check=True)
-    #         await utils.send_audiofile(message.chat.id, 'dc_tts_torch/samples/ru')
-    #     except subprocess.CalledProcessError as e:
-    #         print(f"Произошла ошибка: {e.output}")
+    os.chdir(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+    script = "dc_tts_torch/synthesize.py"
+    dataset = "ljspeech" if language == 'en' else "ruspeech"
 
-    # sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    # sock.bind(('127.0.0.1', 12345))
-    # sock.listen(1)
-    #
-    #
-    # async def send_message_to_script(sock: socket.socket):
-    #     # Отправка сообщения в скрипт через сокет
-    #     sock.sendall(data['text'].encode())
+    command = [sys.executable, script, f"--dataset={dataset}", f"--text={user_text}"]
 
-    # @dp.message_handler()
-    # async def handle_message(message: types.Message):
-    #     await send_message_to_script(message)
+    typing_task = asyncio.create_task(send_typing_action(message.chat.id))
 
-    # await bot.send_chat_action(chat_id=message.chat.id, action=types.ChatAction.TYPING)
-    # os.chdir(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+    try:
+        thread = Thread(target=run_subprocess, args=(command,))
+        thread.start()
 
-    # await bot.send_chat_action(chat_id=message.chat.id, action=types.ChatAction.READING)
+        while thread.is_alive():
+            await asyncio.sleep(1)
+        await message.answer("Процесс успешно завершен!\n"
+                             "Вот ваш аудиофайл:")
+        await send_audiofile(message.chat.id, f'dc_tts_torch/samples/{language}')
+    except subprocess.CalledProcessError as e:
+        print(f"Произошла ошибка: {e.output}")
+        await message.answer("Произошла ошибка при выполнении процесса.")
+    finally:
+        typing_task.cancel()
+        try:
+            await typing_task
+        except asyncio.CancelledError:
+            pass
 
-# @router.message(state=Form.enter_text)
-# async def process_text(message: types.Message, state: FSMContext) -> None:
-#     global process
-#     text = message.text
-#     if process:
-#         process.stdin.write(text + '\n')
-#         process.stdin.flush()
-#
-#         # Reading output for debugging
-#         output, error = process.communicate()
-#         if output:
-#             await bot.send_message(message.chat.id, f"Output: {output}")
-#         if error:
-#             await bot.send_message(message.chat.id, f"Error: {error}")
-#
-#         await state.clear()
-#     else:
-#         await bot.send_message(message.chat.id, "Process not running. Please restart the command.")
-#         await state.clear()
+    await state.clear()
+    await message.answer(
+        text.markup.format(name=message.from_user.full_name), reply_markup=kb.menu)

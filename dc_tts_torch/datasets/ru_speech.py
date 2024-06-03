@@ -90,13 +90,11 @@ class RUSpeech(Dataset):
                 elif key == 'mels':
                     data[key] = np.load(
                         os.path.join(
-                            self.path, 'mels', f'{
-                                self.fnames[index]}.npy'))
+                            self.path, 'mels', f'{self.fnames[index]}.npy'))
                 elif key == 'mags':
                     data[key] = np.load(
                         os.path.join(
-                            self.path, 'mags', f'{
-                                self.fnames[index]}.npy'))
+                            self.path, 'mags', f'{self.fnames[index]}.npy'))
                 elif key == 'mel_gates':
                     data[key] = np.ones(data['mels'].shape[0], dtype=np.int32)
                 elif key == 'mag_gates':

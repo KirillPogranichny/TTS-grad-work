@@ -10,3 +10,4 @@ LJSpeech-1.1
 RUSpeechDataset
 LJSpeech-1.1.tar.bz2
 dc_tts_torch/test.py
+dc_tts_torch/telegram_bot/config.py

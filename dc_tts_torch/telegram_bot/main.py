@@ -24,7 +24,5 @@ async def main():
 
 
 if __name__ == "__main__":
-    # path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-    # os.chdir(path)
     logging.basicConfig(level=logging.INFO)
     asyncio.run(main())
