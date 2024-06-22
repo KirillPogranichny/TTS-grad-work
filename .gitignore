@@ -5,8 +5,8 @@ mels
 mags36
 mels36
 logdir
-samples
+dnn_tts_torch/samples
 LJSpeech-1.1
 RUSpeechDataset
 LJSpeech-1.1.tar.bz2
-dc_tts_torch/telegram_bot/config.py
+dnn_tts_torch/telegram_bot/config.py
