@@ -8,8 +8,8 @@ import numpy as np
 import torch
 import asyncio
 
-from dnn_tts_torch.models.text2mel import Text2Mel
-from dnn_tts_torch.models.ssrn import SSRN
+from models.text2mel import Text2Mel
+from models.ssrn import SSRN
 from hparams import HParams as hp
 from audio import save_to_wav
 from utils import get_last_checkpoint_file_name, load_checkpoint, save_to_png
@@ -70,12 +70,12 @@ else:
 
 
 if args.dataset == 'ljspeech':
-    from dnn_tts_torch.datasets.lj_speech import vocab, get_test_data
+    from datasets.lj_speech import vocab, get_test_data
 
     samples_path = os.path.join('dnn_tts_torch/samples', 'en')
 
 else:
-    from dnn_tts_torch.datasets.ru_speech import vocab, get_test_data
+    from datasets.ru_speech import vocab, get_test_data
 
     samples_path = os.path.join('dnn_tts_torch/samples', 'ru')
 

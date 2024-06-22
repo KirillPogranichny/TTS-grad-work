@@ -6,11 +6,11 @@ import torch
 import torch.nn.functional as F
 from tqdm import tqdm
 
-from dnn_tts_torch.models.ssrn import SSRN
+from models.ssrn import SSRN
 from hparams import HParams as hp
 from logger import Logger
 from utils import get_last_checkpoint_file_name, load_checkpoint, save_checkpoint
-from dnn_tts_torch.datasets.data_loader import SSRNDataLoader
+from datasets.data_loader import SSRNDataLoader
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
@@ -20,6 +20,7 @@ if __name__ == '__main__':
         description=__doc__,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument(
+        '-d',
         "--dataset",
         required=True,
         choices=[
@@ -29,9 +30,9 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.dataset == 'ljspeech':
-        from dnn_tts_torch.datasets.lj_speech import LJSpeech as SpeechDataset
+        from datasets.lj_speech import LJSpeech as SpeechDataset
     else:
-        from dnn_tts_torch.datasets.ru_speech import RUSpeech as SpeechDataset
+        from datasets.ru_speech import RUSpeech as SpeechDataset
 
     use_gpu = torch.cuda.is_available()
     print('use_gpu', use_gpu)

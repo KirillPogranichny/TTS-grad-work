@@ -3,7 +3,7 @@ __all__ = ['SSRN']
 import torch.nn as nn
 import torch.nn.functional as F
 
-from dnn_tts_torch.hparams import HParams as hp
+from hparams import HParams as hp
 from .layers import D, C, HighwayBlock, GatedConvBlock, ResidualBlock
 
 

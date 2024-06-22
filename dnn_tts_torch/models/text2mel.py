@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from dnn_tts_torch.hparams import HParams as hp
+from hparams import HParams as hp
 from .layers import E, C, HighwayBlock, GatedConvBlock, ResidualBlock
 
 

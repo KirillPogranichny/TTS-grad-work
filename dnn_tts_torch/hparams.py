@@ -4,12 +4,8 @@ class HParams:
     # set True if you don't want the progress bar in the console
     disable_progress_bar = False
 
-    logdir = "logdir"  # log dir where the checkpoints and tensorboard files are saved
+    logdir = "dnn_tts_torch/logdir"  # log dir where the checkpoints and tensorboard files are saved
 
-    # audio.py options, these values are from
-    # https://github.com/Kyubyong/dc_tts/blob/master/hyperparams.py
-    # melspectrogram reduction rate, don't change because SSRN is using this
-    # rate
     reduction_rate = 4
     n_fft = 2048  # fft points (samples)
     n_mels = 80  # Number of Mel banks to generate

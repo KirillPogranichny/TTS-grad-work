@@ -6,8 +6,8 @@ import subprocess
 
 from audio import preprocess
 from utils import download_file
-from dnn_tts_torch.datasets.ru_speech import RUSpeech
-from dnn_tts_torch.datasets.lj_speech import LJSpeech
+from datasets.ru_speech import RUSpeech
+from datasets.lj_speech import LJSpeech
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
@@ -15,6 +15,7 @@ parser = argparse.ArgumentParser(
     description=__doc__,
     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument(
+    '-d',
     "--dataset",
     required=True,
     choices=[

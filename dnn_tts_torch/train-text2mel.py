@@ -7,11 +7,11 @@ import torch
 import torch.nn.functional as F
 from tqdm import tqdm
 
-from dnn_tts_torch.models.text2mel import Text2Mel
+from models.text2mel import Text2Mel
 from hparams import HParams as hp
 from logger import Logger
 from utils import get_last_checkpoint_file_name, load_checkpoint, save_checkpoint
-from dnn_tts_torch.datasets.data_loader import Text2MelDataLoader
+from datasets.data_loader import Text2MelDataLoader
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
@@ -22,6 +22,7 @@ if __name__ == '__main__':
         description=__doc__,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument(
+        '-d',
         "--dataset",
         required=True,
         choices=[
@@ -31,9 +32,9 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.dataset == 'ljspeech':
-        from dnn_tts_torch.datasets.lj_speech import vocab, LJSpeech as SpeechDataset
+        from datasets.lj_speech import vocab, LJSpeech as SpeechDataset
     else:
-        from dnn_tts_torch.datasets.ru_speech import vocab, RUSpeech as SpeechDataset
+        from datasets.ru_speech import vocab, RUSpeech as SpeechDataset
 
     use_gpu = torch.cuda.is_available()
     print(f'use_gpu: {use_gpu}')

@@ -1,10 +1,5 @@
 .idea
-data
-mags
-mels
-mags36
-mels36
-logdir
+dnn_tts_torch/logdir
 dnn_tts_torch/samples
 LJSpeech-1.1
 RUSpeechDataset

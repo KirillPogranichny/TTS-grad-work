@@ -11,7 +11,6 @@ from skimage import img_as_ubyte
 
 def get_last_checkpoint_file_name(logdir):
     """Returns the last checkpoint file name in the given log dir path."""
-    '''Ищем файлы, с расширением .pth, находящиеся в дериктории logdir'''
     checkpoints = glob.glob(os.path.join(logdir, '*.pth'))
     checkpoints.sort()
     if len(checkpoints) == 0:
