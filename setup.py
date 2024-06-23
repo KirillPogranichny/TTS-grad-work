@@ -2,13 +2,13 @@ from setuptools import setup, find_packages
 
 
 def readme():
-  with open('README.md', 'r', encoding='utf-8') as f:
+  with open('README_lib.md', 'r', encoding='utf-8') as f:
     return f.read()
 
 
 setup(
   name='dnn_tts_torch',
-  version='0.0.6',
+  version='0.0.8',
   author='KirillPogranichny',
   author_email='kirillpogranichny@gmail.com',
   description='This is a library consisting of pre-trained models for the synthesis of Russian and English speech',

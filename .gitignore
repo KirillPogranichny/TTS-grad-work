@@ -8,3 +8,4 @@ dnn_tts_torch/telegram_bot/config.py
 dnn_tts_torch.egg-info
 build
 dist
+README_lib.md
