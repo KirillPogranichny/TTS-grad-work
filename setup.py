@@ -8,7 +8,7 @@ def readme():
 
 setup(
   name='dnn_tts_torch',
-  version='0.0.8',
+  version='0.0.9',
   author='KirillPogranichny',
   author_email='kirillpogranichny@gmail.com',
   description='This is a library consisting of pre-trained models for the synthesis of Russian and English speech',
