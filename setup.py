@@ -8,14 +8,14 @@ def readme():
 
 setup(
   name='dnn_tts_torch',
-  version='0.0.3',
+  version='0.0.6',
   author='KirillPogranichny',
   author_email='kirillpogranichny@gmail.com',
   description='This is a library consisting of pre-trained models for the synthesis of Russian and English speech',
   long_description=readme(),
   long_description_content_type='text/markdown',
   url='https://github.com/KirillPogranichny/dnn_tts_torch.git',
-  packages=find_packages(),
+  packages=find_packages(include=['dnn_tts_torch', 'dnn_tts_torch.*']),
   install_requires=[
     'absl-py==2.1.0',
     'audioread==3.0.1',
@@ -44,7 +44,7 @@ setup(
     'msgpack==1.0.8',
     'networkx==3.3',
     'numba==0.60.0',
-    'numpy==2.0.0',
+    'numpy==1.26.4',
     'packaging==24.1',
     'pillow==10.3.0',
     'platformdirs==4.2.2',

@@ -3,7 +3,7 @@ __all__ = ['Logger']
 import os
 from tensorboardX import SummaryWriter
 
-from hparams import HParams as hp
+from dnn_tts_torch.hparams import HParams as hp
 
 
 class Logger(object):

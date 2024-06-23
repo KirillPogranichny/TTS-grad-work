@@ -9,11 +9,11 @@ import numpy as np
 import torch
 import asyncio
 
-from models.text2mel import Text2Mel
-from models.ssrn import SSRN
-from hparams import HParams as hp
-from audio import save_to_wav
-from utils import get_last_checkpoint_file_name, load_checkpoint, save_to_png
+from dnn_tts_torch.models.text2mel import Text2Mel
+from dnn_tts_torch.models.ssrn import SSRN
+from dnn_tts_torch.hparams import HParams as hp
+from dnn_tts_torch.audio import save_to_wav
+from dnn_tts_torch.utils import get_last_checkpoint_file_name, load_checkpoint, save_to_png
 
 
 def extract_last_file(file_name):
@@ -50,18 +50,21 @@ def download_model_from_drive(drive_url, output_path):
 
 def synthesize(sentences, dataset='ruspeech'):
     if dataset == 'ljspeech':
-        from datasets.lj_speech import vocab, get_test_data
-        samples_path = os.path.join('dnn_tts_torch/samples', 'en')
+        from dnn_tts_torch.datasets.lj_speech import vocab, get_test_data
+        dataset_folder = 'en'
         text2mel_drive_url = 'https://drive.google.com/uc?export=download&id=1E7_1pwkM2uAawSY0uc1bcZ0S3LUbU9mO'
         ssrn_drive_url = 'https://drive.google.com/uc?export=download&id=1ORrzqHfcRc8GjLkoBEtDJpOpYRhCWN8K'
     else:
-        from datasets.ru_speech import vocab, get_test_data
-        samples_path = os.path.join('dnn_tts_torch/samples', 'ru')
+        from dnn_tts_torch.datasets.ru_speech import vocab, get_test_data
+        dataset_folder = 'ru'
         text2mel_drive_url = 'https://drive.google.com/uc?export=download&id=1Amo3CpUaYMPloVdNcu0Bbfj6gFKhkDLl'
-        ssrn_drive_url = 'https://drive.google.com/uc?export=download&id=1YF-9TRdmd_U2a-8RULkya4iMfyrG2nE0'
+        ssrn_drive_url = 'https://drive.google.com/uc?export=download&id=1HVvNSr1JUQZAgbKY1rrdpgVPqikkcp3q'
+
+    current_dir = os.getcwd()
+    samples_path = os.path.join(current_dir, 'samples', dataset_folder)
 
     if not os.path.isdir(samples_path):
-        os.mkdir(samples_path)
+        os.makedirs(samples_path, exist_ok=True)
         max_number = 0
     else:
         samples_path_list = os.listdir(samples_path)
@@ -74,13 +77,17 @@ def synthesize(sentences, dataset='ruspeech'):
     torch.set_grad_enabled(False)
 
     text2mel = Text2Mel(vocab).eval()
-    last_checkpoint_file_name = get_last_checkpoint_file_name(
-        os.path.join(hp.logdir, f'{dataset}-text2mel'))
+    last_checkpoint_path = os.path.join(os.getcwd(), 'logdir', f'{dataset}-text2mel')
+
+    if not os.path.isdir(last_checkpoint_path):
+        os.makedirs(last_checkpoint_path, exist_ok=True)
+
+    last_checkpoint_file_name = get_last_checkpoint_file_name(last_checkpoint_path)
 
     print(f"last_checkpoint_file_name for text2mel: {last_checkpoint_file_name}")
 
     if not last_checkpoint_file_name:
-        last_checkpoint_file_name = os.path.join(hp.logdir, f'{dataset}-text2mel.pth')
+        last_checkpoint_file_name = os.path.join(last_checkpoint_path, f'{dataset}-text2mel.pth')
         download_model_from_drive(text2mel_drive_url, last_checkpoint_file_name)
 
     try:
@@ -91,13 +98,17 @@ def synthesize(sentences, dataset='ruspeech'):
         sys.exit(1)
 
     ssrn = SSRN().eval()
-    last_checkpoint_file_name = get_last_checkpoint_file_name(
-        os.path.join(hp.logdir, f'{dataset}-ssrn'))
+    last_checkpoint_path = os.path.join(os.getcwd(), 'logdir', f'{dataset}-ssrn')
+
+    if not os.path.isdir(last_checkpoint_path):
+        os.makedirs(last_checkpoint_path, exist_ok=True)
+
+    last_checkpoint_file_name = get_last_checkpoint_file_name(last_checkpoint_path)
 
     print(f"last_checkpoint_file_name for ssrn: {last_checkpoint_file_name}")
 
     if not last_checkpoint_file_name:
-        last_checkpoint_file_name = os.path.join(hp.logdir, f'{dataset}-ssrn.pth')
+        last_checkpoint_file_name = os.path.join(last_checkpoint_path, f'{dataset}-ssrn.pth')
         download_model_from_drive(ssrn_drive_url, last_checkpoint_file_name)
 
     try:

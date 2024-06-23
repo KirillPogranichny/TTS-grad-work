@@ -5,3 +5,6 @@ LJSpeech-1.1
 RUSpeechDataset
 LJSpeech-1.1.tar.bz2
 dnn_tts_torch/telegram_bot/config.py
+dnn_tts_torch.egg-info
+build
+dist

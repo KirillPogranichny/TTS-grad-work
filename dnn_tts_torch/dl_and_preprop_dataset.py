@@ -4,10 +4,10 @@ import sys
 import argparse
 import subprocess
 
-from audio import preprocess
-from utils import download_file
-from datasets.ru_speech import RUSpeech
-from datasets.lj_speech import LJSpeech
+from dnn_tts_torch.audio import preprocess
+from dnn_tts_torch.utils import download_file
+from dnn_tts_torch.datasets.ru_speech import RUSpeech
+from dnn_tts_torch.datasets.lj_speech import LJSpeech
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 

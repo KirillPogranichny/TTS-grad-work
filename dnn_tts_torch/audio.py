@@ -7,8 +7,8 @@ import shutil
 from tqdm import tqdm
 from scipy import signal
 
-from hparams import HParams as hp
-from datasets.ru_speech import RUSpeech
+from dnn_tts_torch.hparams import HParams as hp
+from dnn_tts_torch.datasets.ru_speech import RUSpeech
 
 
 def spectrogram2wav(mag):

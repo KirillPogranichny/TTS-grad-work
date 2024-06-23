@@ -1,6 +1,6 @@
 """
 
-DNN_TTS_Torch library (dnn_tts_torch) v.0.0.1
+DNN_TTS_Torch library (dnn_tts_torch) v.0.0.5
 
 The MIT License Copyright © 2024 KirillPogranichny
 
@@ -9,6 +9,8 @@ The MIT License Copyright © 2024 KirillPogranichny
 
 from .datasets import *
 from .models import *
-from .telegram_bot import *
-from dnn_tts_torch import *
-from .logdir import *
+from .audio import *
+from .hparams import *
+from .logger import *
+from .synthesize import *
+from .utils import *
